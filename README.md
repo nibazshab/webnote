@@ -22,9 +22,7 @@ CGO_ENABLED=0 go build -ldflags="-s -w"
 
 > ___POST /{uid}___
 
-参数
-
-- `t`: 文本内容
+参数：`t` 文本内容
 
 无响应
 
