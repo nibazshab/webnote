@@ -3,7 +3,6 @@ package main
 import (
     "embed"
     "html/template"
-    "io/ioutil"
     "math/rand"
     "net/http"
     "os"
@@ -37,11 +36,10 @@ func main() {
 func handleIllegalPath(w http.ResponseWriter, r *http.Request) {
     if r.Method == http.MethodPost {
     } else {
-        rand.Seed(time.Now().UnixNano())
         a := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         var p string
         for i := 0; i < 5; i++ {
-            p += string(a[rand.Intn(len(a))])
+            p += string(a[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(a))])
         }
         http.Redirect(w, r, "/"+p, http.StatusFound)
     }
@@ -55,13 +53,13 @@ func handlePost(w http.ResponseWriter, r *http.Request, f string) {
         if t == "" {
             os.Remove(f)
         } else {
-            ioutil.WriteFile(f, []byte(t), 0666)
+            os.WriteFile(f, []byte(t), 0666)
         }
     }
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request, p string, f string) {
-    t, _ := ioutil.ReadFile(f)
+    t, _ := os.ReadFile(f)
     ua := r.Header.Get("user-agent")
     if strings.HasPrefix(ua, "curl") || strings.HasPrefix(ua, "Wget") || r.URL.Query().Has("raw") {
         w.Header().Set("Content-type", "text/plain; charset=UTF-8")
