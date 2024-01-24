@@ -14,7 +14,7 @@ import (
 
 //go:embed index.html
 var web embed.FS
-const tmpDir = "tmp"
+const AppData = "tmp"
 
 func main() {
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +22,7 @@ func main() {
         if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(p) || len(p) > 16 {
             handleIllegalPath(w, r)
         } else {
-            f := filepath.Join(tmpDir, p)
+            f := filepath.Join(AppData, p)
             if r.Method == http.MethodPost {
                 handlePost(w, r, f)
             } else {
