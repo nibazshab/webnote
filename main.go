@@ -38,7 +38,7 @@ func handleIllegalPath(w http.ResponseWriter, r *http.Request) {
     } else {
         a := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         var p string
-        for i := 0; i < 5; i++ {
+        for i := 0; i < 4; i++ {
             p += string(a[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(a))])
         }
         http.Redirect(w, r, "/"+p, http.StatusFound)
