@@ -3,6 +3,7 @@ package main
 import (
     "embed"
     "html/template"
+    "log"
     "math/rand"
     "net/http"
     "os"
@@ -14,6 +15,7 @@ import (
 
 //go:embed index.html
 var web embed.FS
+
 const AppData = "tmp"
 
 func main() {
@@ -22,11 +24,12 @@ func main() {
         if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(p) || len(p) > 16 {
             handleIllegalPath(w, r)
         } else {
+            ua := r.Header.Get("user-agent")
             f := filepath.Join(AppData, p)
             if r.Method == http.MethodPost {
-                handlePost(w, r, f)
+                handlePost(w, r, f, p, ua)
             } else {
-                handleGet(w, r, p, f)
+                handleGet(w, r, f, p, ua)
             }
         }
     })
@@ -45,22 +48,31 @@ func handleIllegalPath(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func handlePost(w http.ResponseWriter, r *http.Request, f string) {
+func handlePost(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
     r.ParseForm()
     if !r.PostForm.Has("t") {
     } else {
         t := r.PostFormValue("t")
+        var d string
         if t == "" {
             os.Remove(f)
+            d = "DELETE"
         } else {
             os.WriteFile(f, []byte(t), 0666)
+            d = "UPDATE"
         }
+        xff := r.Header.Get("X-Forwarded-For")
+        if xff == "" {
+            xff = r.RemoteAddr
+        } else {
+			xff = xff[:strings.LastIndex(xff, ":")]
+		}
+        log.Print(xff + " - " + p + " - " + d + " - " + ua)
     }
 }
 
-func handleGet(w http.ResponseWriter, r *http.Request, p string, f string) {
+func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
     t, _ := os.ReadFile(f)
-    ua := r.Header.Get("user-agent")
     if strings.HasPrefix(ua, "curl") || strings.HasPrefix(ua, "Wget") || r.URL.Query().Has("raw") {
         w.Header().Set("Content-type", "text/plain; charset=UTF-8")
         w.Write(t)
