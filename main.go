@@ -25,7 +25,11 @@ func main() {
             ua := r.Header.Get("user-agent")
             f := filepath.Join(AppData, p)
             if r.Method == http.MethodPost {
-                handlePost(w, r, f, p, ua)
+                r.ParseForm()
+                if r.PostForm.Has("t") {
+                    d := handlePost(r, f)
+                    logRecord(r, p, d, ua)
+                }
             } else {
                 handleGet(w, r, f, p, ua)
             }
@@ -38,35 +42,25 @@ func main() {
     http.ListenAndServe(":10003", nil)
 }
 
-func illegalPath(w http.ResponseWriter, r *http.Request) {
-    a := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    var p string
-    for i := 0; i < 4; i++ {
-        p += string(a[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(a))])
+func handlePost(r *http.Request, f string) string {
+    var d string
+    t := r.PostFormValue("t")
+    if t == "" {
+        os.Remove(f)
+        d = "DELETE"
+    } else {
+        os.WriteFile(f, []byte(t), 0666)
+        d = "UPDATE"
     }
-    http.Redirect(w, r, "/"+p, http.StatusFound)
+    return d
 }
 
-func handlePost(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
-    r.ParseForm()
-    if r.PostForm.Has("t") {
-        t := r.PostFormValue("t")
-        var d string
-        if t == "" {
-            os.Remove(f)
-            d = "DELETE"
-        } else {
-            os.WriteFile(f, []byte(t), 0666)
-            d = "UPDATE"
-        }
-        xff := r.Header.Get("X-Forwarded-For")
-        if xff == "" {
-            xff = r.RemoteAddr
-        } else {
-            xff = xff[:strings.LastIndex(xff, ":")]
-        }
-        log.Print(xff + " - " + p + " - " + d + " - " + ua)
+func logRecord(r *http.Request, p string, d string, ua string) {
+    xff := r.Header.Get("X-Forwarded-For")
+    if xff == "" {
+        xff = r.RemoteAddr
     }
+    log.Print(xff[:strings.LastIndex(xff, ":")] + " - " + p + " - " + d + " - " + ua)
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
@@ -83,4 +77,13 @@ func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua st
             T: string(t),
         })
     }
+}
+
+func illegalPath(w http.ResponseWriter, r *http.Request) {
+    var p string
+    a := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    for i := 0; i < 4; i++ {
+        p += string(a[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(a))])
+    }
+    http.Redirect(w, r, "/"+p, http.StatusFound)
 }
