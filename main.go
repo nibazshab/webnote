@@ -60,7 +60,7 @@ func logRecord(r *http.Request, p string, d string, ua string) {
     if xff == "" {
         xff = r.RemoteAddr
     }
-    log.Print(xff[:strings.LastIndex(xff, ":")] + " - " + p + " - " + d + " - " + ua)
+    log.Print(xff + " - " + p + " - " + d + " - " + ua)
 }
 
 func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
