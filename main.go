@@ -65,8 +65,8 @@ func handlePost(w http.ResponseWriter, r *http.Request, f string, p string, ua s
         if xff == "" {
             xff = r.RemoteAddr
         } else {
-			xff = xff[:strings.LastIndex(xff, ":")]
-		}
+            xff = xff[:strings.LastIndex(xff, ":")]
+        }
         log.Print(xff + " - " + p + " - " + d + " - " + ua)
     }
 }
