@@ -11,51 +11,52 @@ import (
     "regexp"
     "strings"
     "time"
+    "unsafe"
 )
 
 //go:embed index.html
 var web embed.FS
 
-const AppData = "tmp"
+const app_data = "tmp"
 
 func main() {
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         p := strings.TrimPrefix(r.URL.Path, "/")
         if regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(p) && len(p) < 16 {
             ua := r.Header.Get("user-agent")
-            f := filepath.Join(AppData, p)
+            f := filepath.Join(app_data, p)
             if r.Method == http.MethodPost {
                 r.ParseForm()
                 if r.PostForm.Has("t") {
-                    d := handlePost(r, f)
-                    logRecord(r, p, d, ua)
+                    d := RequestPost(r, f)
+                    Log(r, p, d, ua)
                 }
             } else {
-                handleGet(w, r, f, p, ua)
+                RequestGet(w, r, f, p, ua)
             }
         } else {
             if r.Method == http.MethodGet {
-                illegalPath(w, r)
+                RedirectPath(w, r)
             }
         }
     })
     http.ListenAndServe(":10003", nil)
 }
 
-func handlePost(r *http.Request, f string) string {
+func RequestPost(r *http.Request, f string) string {
     var d string
     t := r.PostFormValue("t")
     if t == "" {
         os.Remove(f)
         d = "DELETE"
     } else {
-        os.WriteFile(f, []byte(t), 0666)
+        os.WriteFile(f, []byte(t), 0o666)
         d = "UPDATE"
     }
     return d
 }
 
-func logRecord(r *http.Request, p string, d string, ua string) {
+func Log(r *http.Request, p string, d string, ua string) {
     xff := r.Header.Get("X-Forwarded-For")
     if xff == "" {
         xff = r.RemoteAddr
@@ -63,7 +64,7 @@ func logRecord(r *http.Request, p string, d string, ua string) {
     log.Print(xff + " - " + p + " - " + d + " - " + ua)
 }
 
-func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
+func RequestGet(w http.ResponseWriter, r *http.Request, f string, p string, ua string) {
     t, _ := os.ReadFile(f)
     if regexp.MustCompile(`^(curl|Wget).*`).MatchString(ua) || r.URL.Query().Has("raw") {
         w.Header().Set("Content-type", "text/plain; charset=UTF-8")
@@ -79,11 +80,31 @@ func handleGet(w http.ResponseWriter, r *http.Request, f string, p string, ua st
     }
 }
 
-func illegalPath(w http.ResponseWriter, r *http.Request) {
-    var p string
-    a := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    for i := 0; i < 4; i++ {
-        p += string(a[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(a))])
+func RedirectPath(w http.ResponseWriter, r *http.Request) {
+    http.Redirect(w, r, "/"+RandString(), http.StatusFound)
+}
+
+const letter_bytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const (
+    letter_idx_bits = 6
+    letter_idx_mask = 1<<letter_idx_bits - 1
+    letter_idx_max  = 63 / letter_idx_bits
+)
+
+var src = rand.NewSource(time.Now().UnixNano())
+
+func RandString() string {
+    b := make([]byte, 4)
+    for i, cache, remain := 3, src.Int63(), letter_idx_max; i >= 0; {
+        if remain == 0 {
+            cache, remain = src.Int63(), letter_idx_max
+        }
+        if idx := int(cache & letter_idx_mask); idx < len(letter_bytes) {
+            b[i] = letter_bytes[idx]
+            i--
+        }
+        cache >>= letter_idx_bits
+        remain--
     }
-    http.Redirect(w, r, "/"+p, http.StatusFound)
+    return *(*string)(unsafe.Pointer(&b))
 }
