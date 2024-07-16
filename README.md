@@ -11,11 +11,13 @@
 
 __编译步骤__
 
+编译依赖：gcc，go
+
 ```sh
 git clone https://github.com/nibazshab/webnote.git
 cd webnote
 go get ./...
-go build -ldflags="-s -w"
+CGO_ENABLED=1 go build -ldflags="-s -w"
 ```
 
 测试平台：Linux amd64
@@ -24,9 +26,9 @@ go build -ldflags="-s -w"
 
 > ___POST /{uid}___
 
-参数：`t` 文本内容
+请求：application/x-www-form-urlencoded，无返回
 
-无响应
+body：`t` 文本内容
 
 > ___GET /{uid}___
 
