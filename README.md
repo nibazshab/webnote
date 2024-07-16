@@ -15,7 +15,7 @@ __编译步骤__
 git clone https://github.com/nibazshab/webnote.git
 cd webnote
 go get ./...
-CGO_ENABLED=0 go build -ldflags="-s -w"
+go build -ldflags="-s -w"
 ```
 
 测试平台：Linux amd64
