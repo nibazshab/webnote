@@ -20,7 +20,6 @@ func route(w http.ResponseWriter, r *http.Request) {
 
                 logger(r, id, ua, do)
             }
-
         } else {
             show_data(w, r, id, ua)
         }
