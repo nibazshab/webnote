@@ -3,12 +3,15 @@ package main
 import (
     "log"
     "net/http"
+    "strconv"
 )
 
-func logging(r *http.Request, url_path string, option string, client_ua string) {
-    client_ip := r.Header.Get("X-Forwarded-For")
-    if client_ip == "" {
-        client_ip = r.RemoteAddr
+func logger(r *http.Request, id string, ua string, do int) {
+    ip := r.Header.Get("X-Forwarded-For")
+
+    if ip == "" {
+        ip = r.RemoteAddr
     }
-    log.Print(client_ip + " - " + url_path + " - " + option + " - " + client_ua)
+
+    log.Print(id + " - " + strconv.Itoa(do) + " - " + ip + " - " + ua)
 }

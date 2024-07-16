@@ -4,17 +4,17 @@
 
 ## 使用说明
 
-默认监听 10003 端口，数据以文件的形式明文储存在 webnote 文件同目录的 tmp 目录下（需要自己手动创建）
+默认监听 10003 端口，数据储存在 webnote 可执行文件同级目录的 data.db 文件中
 
 1. 编译源代码
-2. 创建 tmp 目录
-3. 运行程序 `./webnote`
+2. 运行程序 `./webnote`
 
 __编译步骤__
 
 ```sh
 git clone https://github.com/nibazshab/webnote.git
 cd webnote
+go get ./...
 CGO_ENABLED=0 go build -ldflags="-s -w"
 ```
 
