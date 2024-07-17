@@ -22,7 +22,7 @@ func route(w http.ResponseWriter, r *http.Request) {
                 do := write_data(r, id)
                 logger(r, id, ua, do)
             } else {
-                w.Write([]byte("ERROR: body should be - t"))
+                w.Write([]byte("ERROR: body not 't'"))
             }
         } else {
             show_data(w, r, id, ua)
@@ -31,7 +31,7 @@ func route(w http.ResponseWriter, r *http.Request) {
         if r.Method == http.MethodGet {
             http.Redirect(w, r, "/"+rand_string(), http.StatusFound)
         } else {
-            w.Write([]byte("ERROR: path should be <= 16"))
+            w.Write([]byte("ERROR: path length more than 16"))
         }
     }
 }
