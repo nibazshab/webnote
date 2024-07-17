@@ -8,7 +8,6 @@ import (
 
 func logger(r *http.Request, id string, ua string, do int) {
     ip := r.Header.Get("X-Forwarded-For")
-
     if ip == "" {
         ip = r.RemoteAddr
     }
