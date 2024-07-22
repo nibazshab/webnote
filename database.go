@@ -2,6 +2,8 @@ package main
 
 import (
     "database/sql"
+    "os"
+    "path/filepath"
 
     _ "github.com/mattn/go-sqlite3"
 )
@@ -9,7 +11,10 @@ import (
 var db *sql.DB
 
 func init() {
-    db, _ = sql.Open("sqlite3", "./data.db")
+    bin_path, _ := os.Executable()
+    db_path := filepath.Join(filepath.Dir(bin_path), "data.db")
+
+    db, _ = sql.Open("sqlite3", db_path)
 
     create_table := `
     CREATE TABLE IF NOT EXISTS webnote_data (
