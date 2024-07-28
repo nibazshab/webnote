@@ -12,7 +12,7 @@ var db *sql.DB
 
 func init() {
     bin_path, _ := os.Executable()
-    db_path := filepath.Join(filepath.Dir(bin_path), "data.db")
+    db_path := filepath.Join(filepath.Dir(bin_path), "webnote.db")
 
     db, _ = sql.Open("sqlite3", db_path)
 
