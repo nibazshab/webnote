@@ -2,6 +2,7 @@ package main
 
 import (
     "database/sql"
+    "log"
     "os"
     "path/filepath"
 
@@ -11,10 +12,18 @@ import (
 var db *sql.DB
 
 func init() {
-    bin_path, _ := os.Executable()
-    db_path := filepath.Join(filepath.Dir(bin_path), "webnote.db")
+    ex, _ := os.Executable()
+    db_dir := filepath.Join(filepath.Dir(ex), "data")
 
-    db, _ = sql.Open("sqlite3", db_path)
+    if _, err := os.Stat(db_dir); os.IsNotExist(err) {
+        os.MkdirAll(db_dir, 0o755)
+    }
+
+    db, _ = sql.Open("sqlite3", filepath.Join(db_dir, "webnote.db"))
+
+    if err := db.Ping(); err != nil {
+        log.Fatalf("database connection error: %v", err)
+    }
 
     create_table := `
     CREATE TABLE IF NOT EXISTS webnote_data (
