@@ -4,7 +4,7 @@
 
 ## 使用说明
 
-默认监听 10003 端口，数据储存在 webnote 可执行文件同级目录的 webnote.db 文件中。注：反向代理时不要代理到域名子目录
+默认监听 10003 端口，数据储存在 webnote 可执行文件同级 data 目录下的 webnote.db 文件中
 
 1. 编译源代码
 2. 运行程序 `./webnote`
@@ -20,7 +20,10 @@ go get ./...
 CGO_ENABLED=1 go build -ldflags="-s -w"
 ```
 
-测试平台：Linux amd64
+> [!TIP]
+> - 测试平台：Linux amd64
+> - 反向代理时不要代理到域名子目录
+> - 使用了 mattn/go-sqlite3 库而受限，编译产物非静态文件
 
 __API__
 
@@ -41,7 +44,6 @@ body：`t` 文本内容
 
 ## 许可证
 
-> [!TIP]
-> Powered by https://github.com/pereorga/minimalist-web-notepad
+Powered by https://github.com/pereorga/minimalist-web-notepad
 
 MIT © ZShab Niba
