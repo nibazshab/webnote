@@ -22,7 +22,7 @@ CGO_ENABLED=1 go build -ldflags="-s -w"
 
 测试平台：Linux amd64
 
-## API
+__API__
 
 > ___POST /{uid}___
 
@@ -39,12 +39,9 @@ body：`t` 文本内容
 - [x] 解决 favicon.ico 被重定向的问题
 - [x] 变更相对路径为绝对路径
 
-## 开源地址
-
-https://github.com/nibazshab/webnote
-
-Powered by https://github.com/pereorga/minimalist-web-notepad
-
 ## 许可证
+
+> [!TIP]
+> Powered by https://github.com/pereorga/minimalist-web-notepad
 
 MIT © ZShab Niba
