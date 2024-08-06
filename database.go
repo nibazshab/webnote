@@ -16,7 +16,7 @@ func init() {
     db_dir := filepath.Join(filepath.Dir(ex), "data")
 
     if _, err := os.Stat(db_dir); os.IsNotExist(err) {
-        os.MkdirAll(db_dir, 0o755)
+        os.MkdirAll(db_dir, os.ModePerm)
     }
 
     db, _ = sql.Open("sqlite3", filepath.Join(db_dir, "webnote.db"))
