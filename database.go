@@ -22,7 +22,7 @@ func init() {
     db, _ = sql.Open("sqlite3", filepath.Join(db_dir, "webnote.db"))
 
     if err := db.Ping(); err != nil {
-        log.Fatalf("database connection error: %v", err)
+        log.Fatalf("database error: %v", err)
     }
 
     create_table := `
