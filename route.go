@@ -2,9 +2,31 @@ package main
 
 import (
     "net/http"
+    "os"
+    "path/filepath"
     "regexp"
     "strings"
 )
+
+var (
+    db_  string
+    log_ string
+)
+
+func init() {
+    ex, _ := os.Executable()
+    datadir := filepath.Join(filepath.Dir(ex), "data")
+
+    if _, err := os.Stat(datadir); os.IsNotExist(err) {
+        os.MkdirAll(datadir, os.ModePerm)
+    }
+
+    db_ = filepath.Join(datadir, "webnote.db")
+    log_ = filepath.Join(datadir, "log.log")
+
+    db_init()
+    log_init()
+}
 
 func route(w http.ResponseWriter, r *http.Request) {
     id := strings.TrimPrefix(r.URL.Path, "/")
@@ -20,7 +42,7 @@ func route(w http.ResponseWriter, r *http.Request) {
             r.ParseForm()
             if r.PostForm.Has("t") {
                 do := write_data(r, id)
-                logger(r, id, ua, do)
+                logging(r, id, ua, do)
             } else {
                 w.Write([]byte("ERROR: body not 't'"))
             }
