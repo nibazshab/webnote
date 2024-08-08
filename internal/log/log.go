@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"webnote/pkg/util"
+	"github.com/nibazshab/webnote/pkg/util"
 )
 
 var log_file string

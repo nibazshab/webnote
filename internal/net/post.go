@@ -3,7 +3,7 @@ package net
 import (
 	"net/http"
 
-	"webnote/internal/db"
+	"github.com/nibazshab/webnote/internal/db"
 )
 
 func HttpPostIns(idx string, con string) {

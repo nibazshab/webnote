@@ -1,4 +1,4 @@
-module webnote
+module github.com/nibazshab/webnote
 
 go 1.22.5
 

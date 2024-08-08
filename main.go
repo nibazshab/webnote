@@ -1,7 +1,7 @@
 package main
 
 import (
-	"webnote/cmd"
+	"github.com/nibazshab/webnote/cmd"
 )
 
 func main() {

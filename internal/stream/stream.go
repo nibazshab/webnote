@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"webnote/internal/log"
-	"webnote/internal/net"
-	"webnote/pkg/util"
+	"github.com/nibazshab/webnote/internal/log"
+	"github.com/nibazshab/webnote/internal/net"
+	"github.com/nibazshab/webnote/pkg/util"
 )
 
 var re = regexp.MustCompile(`^[a-zA-Z0-9]+$`)

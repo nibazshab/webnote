@@ -4,9 +4,9 @@ import (
 	"html/template"
 	"net/http"
 
-	"webnote/internal/db"
-	"webnote/pkg/util"
-	"webnote/web"
+	"github.com/nibazshab/webnote/internal/db"
+	"github.com/nibazshab/webnote/pkg/util"
+	"github.com/nibazshab/webnote/web"
 )
 
 func HttpGetPage(idx string, con string, w http.ResponseWriter) {
