@@ -3,9 +3,9 @@ package cmd
 import (
 	"net/http"
 
-	"webnote/internal/db"
-	"webnote/internal/log"
-	"webnote/internal/stream"
+	"github.com/nibazshab/webnote/internal/db"
+	"github.com/nibazshab/webnote/internal/log"
+	"github.com/nibazshab/webnote/internal/stream"
 )
 
 func init() {

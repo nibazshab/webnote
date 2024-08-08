@@ -3,7 +3,7 @@ package log
 import (
 	"path/filepath"
 
-	"webnote/internal/dir"
+	"github.com/nibazshab/webnote/internal/dir"
 )
 
 func GetLogFile() string {
