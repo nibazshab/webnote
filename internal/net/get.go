@@ -9,19 +9,19 @@ import (
 	"github.com/nibazshab/webnote/web"
 )
 
-func HttpGetPage(idx string, con string, w http.ResponseWriter) {
+func HttpGetPage(idx string, con *string, w http.ResponseWriter) {
 	template.Must(template.ParseFS(web.Web, "index.html")).Execute(w, struct {
 		URL string
-		CON string
+		CON *string
 	}{
 		URL: idx,
 		CON: con,
 	})
 }
 
-func HttpGetRaw(con string, w http.ResponseWriter) {
+func HttpGetRaw(con *string, w http.ResponseWriter) {
 	w.Header().Set("Content-type", "text/plain; charset=utf-8")
-	w.Write([]byte(con))
+	w.Write([]byte(*con))
 }
 
 func HttpGet(idx string, w http.ResponseWriter, r *http.Request) {
@@ -31,8 +31,8 @@ func HttpGet(idx string, w http.ResponseWriter, r *http.Request) {
 	db.QueryRow("SELECT text FROM webnote_data WHERE id = ?", idx).Scan(&con)
 
 	if util.UACheck(r) {
-		HttpGetRaw(con, w)
+		HttpGetRaw(&con, w)
 	} else {
-		HttpGetPage(idx, con, w)
+		HttpGetPage(idx, &con, w)
 	}
 }
