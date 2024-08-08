@@ -1,12 +1,9 @@
 package main
 
 import (
-    "net/http"
+	"webnote/cmd"
 )
 
 func main() {
-    defer db.Close()
-
-    http.HandleFunc("/", route)
-    http.ListenAndServe(":10003", nil)
+	cmd.Start()
 }
