@@ -6,9 +6,9 @@ import (
 	"github.com/nibazshab/webnote/internal/db"
 )
 
-func HttpPostIns(idx string, con string) {
+func HttpPostIns(idx string, con *string) {
 	db := db.GetDb()
-	db.Exec("INSERT OR REPLACE INTO webnote_data (id, text) VALUES (?, ?)", idx, con)
+	db.Exec("INSERT OR REPLACE INTO webnote_data (id, text) VALUES (?, ?)", idx, *con)
 }
 
 func HttpPostDel(idx string) {
@@ -25,7 +25,7 @@ func HttpPost(idx string, r *http.Request) string {
 		return "del"
 
 	} else {
-		HttpPostIns(idx, con)
+		HttpPostIns(idx, &con)
 
 		return "ins"
 	}
