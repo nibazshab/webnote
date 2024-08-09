@@ -31,8 +31,8 @@ body：`t` 文本内容
 go 使用包管理器或任意方式安装，musl 可以通过如下命令安装
 
 ```sh
-url="https://musl.cc/x86_64-linux-musl-cross.tgz"
-wget -O- "$url" | tar -zxvf - --strip-components=1 -C /usr/local
+musl="https://musl.cc/x86_64-linux-musl-cross.tgz"
+wget -O- "$musl" | tar -zxvf - --strip-components=1 -C /usr/local
 ```
 
 开始构建
