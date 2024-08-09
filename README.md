@@ -4,38 +4,50 @@
 
 ## 使用说明
 
-默认监听 10003 端口，数据储存在 webnote 可执行文件同级 data 目录下的 webnote.db 文件中
+纯静态无任何依赖，直接运行 `webnote` 二进制文件即可，默认监听 10003 端口，内容储存在 sqlite 数据库中
 
-1. 编译源代码
-2. 运行程序 `./webnote`
-
-__编译步骤__
-
-编译依赖：gcc，go
-
-```sh
-git clone https://github.com/nibazshab/webnote.git
-cd webnote
-go get ./...
-CGO_ENABLED=1 go build -ldflags="-s -w"
-```
+数据库文件位于文件同级目录的 data/webnote.db，日志文件位于 data/log.log
 
 > [!TIP]
 > - 测试平台：Linux amd64
-> - 反向代理时不要代理到域名子目录
-> - 使用了 mattn/go-sqlite3 库而受限，编译产物非静态文件
+> - 暂不支持反向代理到域名子目录
 
-__API__
+### API
 
-> ___POST /{uid}___
+- ___POST /{uid}___
 
 请求：application/x-www-form-urlencoded，无返回
 
 body：`t` 文本内容
 
-> ___GET /{uid}___
+- ___GET /{uid}___
 
 返回该链接所对应的文本内容
+
+## 构建说明
+
+所需软件包：go, musl
+
+go 使用包管理器或任意方式安装，musl 可以通过如下命令安装
+
+```sh
+url="https://musl.cc/x86_64-linux-musl-cross.tgz"
+wget -O- "$url" | tar -zxvf - --strip-components=1 -C /usr/local
+```
+
+开始构建
+
+```sh
+go get ./...
+
+flags="-s -w --extldflags '-static -fpic'"
+export GOOS=linux
+export GOARCH=amd64
+export CC=x86_64-linux-musl-gcc
+export CGO_ENABLED=1
+
+go build -ldflags="$flags"
+```
 
 ## PLAN-B
 
