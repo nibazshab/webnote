@@ -39,9 +39,13 @@ func Stream(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if r.Method == http.MethodGet {
-			http.Redirect(w, r, "/"+util.RandString(4), http.StatusFound)
+			if idx == "style.css" || idx == "script.js" {
+				net.AssetFile(idx, w)
+			} else {
+				http.Redirect(w, r, "/"+util.RandString(4), http.StatusFound)
+			}
 		} else {
-			w.Write([]byte("ERROR: path length more than 16"))
+			w.Write([]byte("ERROR: path illegal"))
 		}
 	}
 }

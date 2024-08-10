@@ -10,7 +10,7 @@ import (
 )
 
 func HttpGetPage(idx string, con *string, w http.ResponseWriter) {
-	template.Must(template.ParseFS(web.Web, "index.html")).Execute(w, struct {
+	template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(w, struct {
 		URL string
 		CON *string
 	}{
@@ -35,4 +35,12 @@ func HttpGet(idx string, w http.ResponseWriter, r *http.Request) {
 	} else {
 		HttpGetPage(idx, &con, w)
 	}
+}
+
+func AssetFile(idx string, w http.ResponseWriter) {
+	idx = "public/" + idx
+
+	data, _ := web.Web.ReadFile(idx)
+
+	w.Write(data)
 }
