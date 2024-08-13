@@ -1,14 +1,11 @@
 package util
 
-import (
-	"net/http"
-)
+import "net/http"
 
-func GetIP(r *http.Request) string {
-	ip := r.Header.Get("X-Forwarded-For")
-
+func GetUserIP(req *http.Request) string {
+	ip := req.Header.Get("X-Forwarded-For")
 	if ip == "" {
-		ip = r.RemoteAddr
+		ip = req.RemoteAddr
 	}
 
 	return ip

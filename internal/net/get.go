@@ -9,7 +9,7 @@ import (
 	"github.com/nibazshab/webnote/web"
 )
 
-func HttpGetPage(idx string, con *string, w http.ResponseWriter) {
+func RespWebPage(idx string, con *string, w http.ResponseWriter) {
 	template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(w, struct {
 		URL string
 		CON *string
@@ -19,28 +19,18 @@ func HttpGetPage(idx string, con *string, w http.ResponseWriter) {
 	})
 }
 
-func HttpGetRaw(con *string, w http.ResponseWriter) {
+func RespRawData(con *string, w http.ResponseWriter) {
 	w.Header().Set("Content-type", "text/plain; charset=utf-8")
 	w.Write([]byte(*con))
 }
 
-func HttpGet(idx string, w http.ResponseWriter, r *http.Request) {
-	db := db.GetDb()
+func RespGet(idx string, w http.ResponseWriter, req *http.Request) {
+	con := new(string)
+	db.Select(idx, con)
 
-	var con string
-	db.QueryRow("SELECT text FROM webnote_data WHERE id = ?", idx).Scan(&con)
-
-	if util.UACheck(r) {
-		HttpGetRaw(&con, w)
+	if util.IsReqRaw(req) {
+		RespRawData(con, w)
 	} else {
-		HttpGetPage(idx, &con, w)
+		RespWebPage(idx, con, w)
 	}
-}
-
-func AssetFile(idx string, w http.ResponseWriter) {
-	idx = "public/" + idx
-
-	data, _ := web.Web.ReadFile(idx)
-
-	w.Write(data)
 }

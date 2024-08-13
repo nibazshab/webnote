@@ -6,6 +6,6 @@ import (
 	"github.com/nibazshab/webnote/internal/dir"
 )
 
-func GetLogFile() string {
+func LogFilePath() string {
 	return filepath.Join(dir.Init(), "log.log")
 }

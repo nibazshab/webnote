@@ -6,6 +6,6 @@ import (
 	"github.com/nibazshab/webnote/internal/dir"
 )
 
-func GetDbFile() string {
+func DbFilePath() string {
 	return filepath.Join(dir.Init(), "webnote.db")
 }

@@ -5,17 +5,16 @@ import (
 	"path/filepath"
 )
 
-var data_dir string
+var dataDir string
 
 func Init() string {
-	if data_dir == "" {
-		ex, _ := os.Executable()
-		data_dir = filepath.Join(filepath.Dir(ex), "data")
+	if dataDir == "" {
+		exe, _ := os.Executable()
+		dataDir = filepath.Join(filepath.Dir(exe), "data")
 
-		if _, err := os.Stat(data_dir); os.IsNotExist(err) {
-			os.MkdirAll(data_dir, 0o755)
+		if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+			os.MkdirAll(dataDir, 0o755)
 		}
 	}
-
-	return data_dir
+	return dataDir
 }

@@ -9,20 +9,19 @@ import (
 
 var db *sql.DB
 
-func SQLCreateTable() string {
+func InitSQL() string {
 	sql := "CREATE TABLE IF NOT EXISTS webnote_data (id VARCHAR(16) PRIMARY KEY, text TEXT);"
-
 	return sql
 }
 
 func Init() {
-	db, _ = sql.Open("sqlite3", GetDbFile())
+	db, _ = sql.Open("sqlite3", DbFilePath())
 
 	if err := db.Ping(); err != nil {
 		log.Fatalf("db connect error: %v", err)
 	}
 
-	db.Exec(SQLCreateTable())
+	db.Exec(InitSQL())
 }
 
 func Close() {
@@ -30,8 +29,4 @@ func Close() {
 	if err != nil {
 		log.Fatalf("db close error: %v", err)
 	}
-}
-
-func GetDb() *sql.DB {
-	return db
 }
