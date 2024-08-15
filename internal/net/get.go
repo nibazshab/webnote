@@ -9,7 +9,7 @@ import (
 	"github.com/nibazshab/webnote/web"
 )
 
-func RespWebPage(idx string, con *string, w http.ResponseWriter) {
+func respWebPage(idx string, con *string, w http.ResponseWriter) {
 	template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(w, struct {
 		URL string
 		CON *string
@@ -19,7 +19,7 @@ func RespWebPage(idx string, con *string, w http.ResponseWriter) {
 	})
 }
 
-func RespRawData(con *string, w http.ResponseWriter) {
+func respRawData(con *string, w http.ResponseWriter) {
 	w.Header().Set("Content-type", "text/plain; charset=utf-8")
 	w.Write([]byte(*con))
 }
@@ -29,8 +29,8 @@ func RespGet(idx string, w http.ResponseWriter, req *http.Request) {
 	db.Select(idx, con)
 
 	if util.IsReqRaw(req) {
-		RespRawData(con, w)
+		respRawData(con, w)
 	} else {
-		RespWebPage(idx, con, w)
+		respWebPage(idx, con, w)
 	}
 }

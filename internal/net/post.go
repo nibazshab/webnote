@@ -8,7 +8,6 @@ import (
 
 func RespPost(idx string, req *http.Request) string {
 	con := req.PostFormValue("t")
-
 	if con == "" {
 		db.Delete(idx)
 		return "del"

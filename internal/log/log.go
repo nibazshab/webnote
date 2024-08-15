@@ -13,7 +13,7 @@ var logFile string
 
 func Init() {
 	if logFile == "" {
-		logFile = LogFilePath()
+		logFile = getLogPath()
 	}
 
 	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)

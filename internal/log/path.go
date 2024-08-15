@@ -1,11 +1,7 @@
 package log
 
-import (
-	"path/filepath"
+import "github.com/nibazshab/webnote/internal/datapath"
 
-	"github.com/nibazshab/webnote/internal/dir"
-)
-
-func LogFilePath() string {
-	return filepath.Join(dir.Init(), "log.log")
+func getLogPath() string {
+	return datapath.GetDataFile("log.log")
 }

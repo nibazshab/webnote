@@ -8,7 +8,7 @@ import (
 
 func AssetFile(idx string, w http.ResponseWriter) {
 	idx = "public/" + idx
-	data, _ := web.Web.ReadFile(idx)
 
+	data, _ := web.Web.ReadFile(idx)
 	w.Write(data)
 }

@@ -10,12 +10,12 @@ import (
 	"github.com/nibazshab/webnote/pkg/util"
 )
 
-var re = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+var rePath = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 
 func Stream(w http.ResponseWriter, req *http.Request) {
 	idx := strings.TrimPrefix(req.URL.Path, "/")
 
-	if re.MatchString(idx) && len(idx) < 17 {
+	if rePath.MatchString(idx) && len(idx) < 17 {
 		if req.Method == http.MethodPost {
 			if !strings.HasPrefix(req.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
 				w.Write([]byte("ERROR: content-type not application/x-www-form-urlencoded"))
