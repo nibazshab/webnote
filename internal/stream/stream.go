@@ -17,7 +17,7 @@ func Stream(w http.ResponseWriter, req *http.Request) {
 
 	if rePath.MatchString(idx) && len(idx) < 17 {
 		if req.Method == http.MethodPost {
-			idx, msg := net.RespPost(idx, w, req)
+			msg := net.RespPost(idx, w, req)
 			if msg != "" {
 				log.Message(idx, msg, req)
 			}

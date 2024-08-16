@@ -7,10 +7,10 @@ import (
 	"github.com/nibazshab/webnote/internal/db"
 )
 
-func RespPost(idx string, w http.ResponseWriter, req *http.Request) (string, string) {
+func RespPost(idx string, w http.ResponseWriter, req *http.Request) string {
 	if !strings.HasPrefix(req.Header.Get("Content-Type"), "application/x-www-form-urlencoded") {
 		w.Write([]byte("ERROR: content-type not application/x-www-form-urlencoded"))
-		return "", ""
+		return ""
 	}
 
 	req.ParseForm()
@@ -27,8 +27,8 @@ func RespPost(idx string, w http.ResponseWriter, req *http.Request) (string, str
 		}
 	} else {
 		w.Write([]byte("ERROR: body not 't'"))
-		return "", ""
+		return ""
 	}
 
-	return idx, msg
+	return msg
 }
