@@ -8,8 +8,14 @@
 </head>
 
 <body>
-    <div>
+    <div class="background">
         <textarea>{{ .CON }}</textarea>
+    </div>
+
+    <div class="div_replace" id="div_replace">
+        <input type="text" id="text_find" placeholder="Find">
+        <input type="text" id="text_replace" placeholder="Replace">
+        <button id="button_replace">=</button>
     </div>
 </body>
 <script src="script.js"></script>

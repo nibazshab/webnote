@@ -2,7 +2,7 @@ body {
     background: #e9edf0;
 }
 
-div {
+.background {
     position: absolute;
     top: 15px;
     bottom: 15px;
@@ -20,6 +20,28 @@ textarea {
     resize: none;
 }
 
+.div_replace {
+    position: fixed;
+    top: 5%;
+    right: 5%;
+    border-left: 6px solid #718493;
+    background-color: #e9edf0;
+    padding: 10px;
+    display: none;
+}
+
+button,
+input {
+    border: 1px solid #718493;
+    background-color: #fff;
+    outline: none;
+}
+
+button:hover {
+    border: 1px solid #017acc;
+    background-color: #cfe4fd;
+}
+
 @media (prefers-color-scheme: dark) {
     body {
         background: #393939;
@@ -28,5 +50,22 @@ textarea {
     textarea {
         background: #151515;
         color: #ededed;
+    }
+
+    .div_replace {
+        border-color: #53575b;
+        background-color: #393939;
+    }
+
+    button,
+    input {
+        border-color: #53575b;
+        background-color: #151515;
+        color: #ededed;
+    }
+
+    button:hover {
+        border-color: #0b78fe;
+        background-color: #004573;
     }
 }
