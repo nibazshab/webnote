@@ -1,23 +1,23 @@
+<!doctype html>
 <html>
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ .URL }}</title>
-    <link rel="icon" href="data:image/ico;base64,aWNv">
-    <link href="style.css" rel="stylesheet" />
+    <link href="assets/style.css" rel="stylesheet" />
 </head>
 
 <body>
-    <div class="background">
-        <textarea id="con">{{ .CON }}</textarea>
-    </div>
+<div class="bg">
+    <textarea id="con">{{ .CON }}</textarea>
+</div>
 
-    <div class="div_replace" id="div_replace">
-        <input type="text" id="text_find" placeholder="Find">
-        <input type="text" id="text_replace" placeholder="Replace">
-        <button id="button_replace">=</button>
-    </div>
+<div class="re" id="re">
+    <input id="tf" placeholder="Find">
+    <input id="tr" placeholder="Replace">
+    <button id="button_replace">=</button>
+</div>
 </body>
-<script src="script.js"></script>
+<script src="assets/script.js"></script>
 
 </html>

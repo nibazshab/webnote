@@ -23,17 +23,17 @@ function sendmsg() {
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'f') {
         e.preventDefault();
-        const div_replace = document.getElementById('div_replace');
-        div_replace.style.display = div_replace.style.display === 'block' ? 'none' : 'block';
-        if (div_replace.style.display === 'block') {
-            document.getElementById('text_find').focus();
+        const re = document.getElementById('re');
+        re.style.display = re.style.display === 'block' ? 'none' : 'block';
+        if (re.style.display === 'block') {
+            document.getElementById('tf').focus();
         }
     }
 });
 
 document.getElementById('button_replace').addEventListener('click', () => {
-    const text_find = document.getElementById('text_find').value;
-    const text_replace = document.getElementById('text_replace').value;
-    textarea.value = textarea.value.split(text_find).join(text_replace);
+    const tf = document.getElementById('tf').value;
+    const tr = document.getElementById('tr').value;
+    textarea.value = textarea.value.split(tf).join(tr);
     sendmsg()
 });

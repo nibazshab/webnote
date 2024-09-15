@@ -16,7 +16,10 @@ func Init() {
 		log.Fatalf("db connect error: %v", err)
 	}
 
-	db.Exec(initSQL())
+	_, err := db.Exec(initSQL())
+	if err != nil {
+		log.Fatalf("db init error: %v", err)
+	}
 }
 
 func Close() {

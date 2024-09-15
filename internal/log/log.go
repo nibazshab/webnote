@@ -3,35 +3,35 @@ package log
 import (
 	"io"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/nibazshab/webnote/pkg/util"
 )
 
-var logFile string
+var logf string
 
 func Init() {
-	if logFile == "" {
-		logFile = getLogPath()
+	if logf == "" {
+		logf = getLogPath()
 	}
 
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(logf, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		log.Fatalf("log.log error: %v", err)
+		log.Fatalf("log open error: %v", err)
 	}
 	defer f.Close()
 }
 
-func Message(idx string, msg string, req *http.Request) {
-	f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
+func Logging(c *gin.Context, id string, handle rune) {
+	f, _ := os.OpenFile(logf, os.O_APPEND|os.O_WRONLY, 0o644)
 	defer f.Close()
 
 	multiWriter := io.MultiWriter(os.Stdout, f)
 	log.SetOutput(multiWriter)
-	log.Print(idx + " | " + msg + " | " + util.GetUserIP(req) + " | " + util.GetUserUA(req))
+	log.Print(id + " | " + string(handle) + " | " + util.GetUserIP(c.Request) + " | " + util.GetUserUA(c.Request))
 }
 
-func Fatalf(msg string, err error) {
-	log.Fatalf(msg, err)
+func Fatalf(format string, v ...any) {
+	log.Fatalf(format, v...)
 }

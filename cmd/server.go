@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"net/http"
+	"github.com/gin-gonic/gin"
 
 	"github.com/nibazshab/webnote/cmd/flag"
 	"github.com/nibazshab/webnote/internal/db"
 	"github.com/nibazshab/webnote/internal/log"
-	"github.com/nibazshab/webnote/internal/stream"
+	"github.com/nibazshab/webnote/router"
 )
 
 func init() {
@@ -17,8 +17,12 @@ func init() {
 func Start() {
 	defer db.Close()
 
-	http.HandleFunc("/", stream.Stream)
-	if err := http.ListenAndServe(":"+*flag.Port, nil); err != nil {
-		log.Fatalf("http start error: %v", err)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+
+	router.Router(r)
+
+	if err := r.Run(":" + *flag.Port); err != nil {
+		log.Fatalf("start error: %v", err)
 	}
 }

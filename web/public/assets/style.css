@@ -2,7 +2,7 @@ body {
     background: #e9edf0;
 }
 
-.background {
+.bg {
     position: absolute;
     top: 15px;
     bottom: 15px;
@@ -20,7 +20,7 @@ textarea {
     resize: none;
 }
 
-.div_replace {
+.re {
     position: fixed;
     top: 5%;
     right: 5%;
@@ -52,7 +52,7 @@ button:hover {
         color: #ededed;
     }
 
-    .div_replace {
+    .re {
         border-color: #53575b;
         background-color: #393939;
     }
