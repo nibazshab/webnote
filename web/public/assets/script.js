@@ -31,7 +31,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-document.getElementById('button_replace').addEventListener('click', () => {
+document.getElementById('b_re').addEventListener('click', () => {
     const tf = document.getElementById('tf').value;
     const tr = document.getElementById('tr').value;
     textarea.value = textarea.value.split(tf).join(tr);

@@ -15,10 +15,11 @@ func Router(r *gin.Engine) {
 	{
 		g := r.Group("/assets")
 		{
+			g.Use(cacheControl)
 			net.Static(g)
 		}
 
-		s.GET("/favicon.ico", func(c *gin.Context) {
+		s.GET("/favicon.ico", cacheControl, func(c *gin.Context) {
 			c.Data(http.StatusOK, "image/x-icon", []byte{})
 		})
 
