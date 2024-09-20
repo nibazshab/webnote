@@ -1,42 +1,16 @@
-# webnote
+# WebNote
 
-网页记事本，用于临时记录一些内容
+这是一个简单的网页记事本，用于临时记录一些内容
 
-## 快速上手
+### 快速上手
 
-纯静态的二进制单文件，直接运行即可，默认监听 `10003` 端口
+独立的二进制文件，直接运行即可，默认监听 `10003` 端口，使用 SQLite 存储内容，数据和日志位于 webnote_data 目录中
 
 ```sh
 ./webnote
 ```
 
-## 使用说明
-
-内容储存在 sqlite 数据库中，位于文件同级目录的 data/webnote.db，日志文件位于 data/log.log
-
-命令行可以接收的参数
-
-参数|默认值|描述
--|-|-
--port|10003|程序监听的端口号
-
-> [!TIP]
-> - 测试平台：Linux amd64
-> - 暂不支持反向代理到域名子目录
-
-### API
-
-- ___POST /{uid}___
-
-请求：application/x-www-form-urlencoded，无返回
-
-body：`t` 文本内容
-
-- ___GET /{uid}___
-
-返回该链接所对应的文本内容
-
-## 构建说明
+### 构建说明
 
 所需软件包：go, musl
 
@@ -60,6 +34,32 @@ export CGO_ENABLED=1
 
 go build -ldflags="$flags"
 ```
+
+### 使用说明
+
+命令行可以接收的参数
+
+| 参数 | 默认值 | 描述 |
+| - | - | - |
+| -port | 10003 | 程序监听的端口号 |
+
+### API
+
+- ___POST /{uid}___
+
+请求：application/x-www-form-urlencoded，无返回
+
+body：`t` 文本内容
+
+- ___GET /{uid}___
+
+返回该链接所对应的文本内容
+
+---
+
+> [!TIP]
+> - 测试平台：Linux amd64
+> - 暂不支持反向代理到域名子目录
 
 ## PLAN-B
 

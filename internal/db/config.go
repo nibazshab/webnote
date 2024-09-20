@@ -9,4 +9,4 @@ type Data struct {
 
 var tablePrefix = "webnote_"
 
-var dbFile = datapath.GetDataFile("webnote.db")
+var dbFile = datapath.GetDataFile("database.sqlite")

@@ -10,7 +10,7 @@ var dataPath string
 func GetDataFile(file string) string {
 	if dataPath == "" {
 		ex, _ := os.Executable()
-		dataPath = filepath.Join(filepath.Dir(ex), "data")
+		dataPath = filepath.Join(filepath.Dir(ex), "webnote_data")
 
 		if _, err := os.Stat(dataPath); os.IsNotExist(err) {
 			err := os.MkdirAll(dataPath, 0o755)
