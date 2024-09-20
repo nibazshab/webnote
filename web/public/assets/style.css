@@ -18,6 +18,7 @@ textarea {
     border: 0;
     outline: none;
     resize: none;
+    box-sizing: border-box;
 }
 
 .re {
