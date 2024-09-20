@@ -6,17 +6,12 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/nibazshab/webnote/pkg/util"
 )
 
-var logf string
-
 func Init() {
-	if logf == "" {
-		logf = getLogPath()
-	}
-
-	f, err := os.OpenFile(logf, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatalf("log open error: %v", err)
 	}
@@ -24,7 +19,7 @@ func Init() {
 }
 
 func Logging(c *gin.Context, id string, handle rune) {
-	f, _ := os.OpenFile(logf, os.O_APPEND|os.O_WRONLY, 0o644)
+	f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
 	defer f.Close()
 
 	multiWriter := io.MultiWriter(os.Stdout, f)

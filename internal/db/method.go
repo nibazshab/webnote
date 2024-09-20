@@ -1,13 +1,15 @@
 package db
 
 func Insert(id string, con *string) {
-	db.Exec("INSERT OR REPLACE INTO webnote_data (id, con) VALUES (?, ?)", id, *con)
+	db.Save(&Data{ID: id, Con: *con})
 }
 
 func Delete(id string) {
-	db.Exec("DELETE FROM webnote_data WHERE id = ?", id)
+	db.Where(Data{ID: id}).Delete(&Data{})
 }
 
-func Select(id string, con *string) {
-	db.QueryRow("SELECT con FROM webnote_data WHERE id = ?", id).Scan(con)
+func Select(id string) *string {
+	con := Data{ID: id}
+	db.Where(con).First(&con)
+	return &con.Con
 }

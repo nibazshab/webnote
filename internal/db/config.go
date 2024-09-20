@@ -2,10 +2,11 @@ package db
 
 import "github.com/nibazshab/webnote/internal/datapath"
 
-func initSQL() string {
-	return "CREATE TABLE IF NOT EXISTS webnote_data (id VARCHAR(16) PRIMARY KEY, con TEXT);"
+type Data struct {
+	ID  string `gorm:"type:char(16);primaryKey"`
+	Con string
 }
 
-func getDbPath() string {
-	return datapath.GetDataFile("webnote.db")
-}
+var tablePrefix = "webnote_"
+
+var dbFile = datapath.GetDataFile("webnote.db")

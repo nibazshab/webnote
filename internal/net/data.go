@@ -10,6 +10,7 @@ func ins(id string, con *string) {
 	db.Insert(id, con)
 }
 
-func sel(id string, con *string) {
-	db.Select(id, con)
+func sel(id string) *string {
+	con := db.Select(id)
+	return con
 }

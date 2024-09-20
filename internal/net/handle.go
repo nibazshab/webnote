@@ -7,8 +7,7 @@ import (
 )
 
 func HandleGet(c *gin.Context, id string) {
-	con := new(string)
-	sel(id, con)
+	con := sel(id)
 
 	if reqRawCheck(c) {
 		respRawData(c, con)
