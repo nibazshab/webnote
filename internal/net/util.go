@@ -15,6 +15,6 @@ func conTypeCheck(c *gin.Context) bool {
 
 var regexUa = regexp.MustCompile(`^(curl|Wget)`)
 
-func reqRawCheck(c *gin.Context) bool {
+func reqTypeCheck(c *gin.Context) bool {
 	return regexUa.MatchString(util.GetUserUA(c.Request)) || c.Request.URL.Query().Has("raw")
 }

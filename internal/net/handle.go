@@ -9,10 +9,10 @@ import (
 func HandleGet(c *gin.Context, id string) {
 	con := sel(id)
 
-	if reqRawCheck(c) {
-		respRawData(c, con)
+	if reqTypeCheck(c) {
+		rawData(c, con)
 	} else {
-		respWebPage(c, id, con)
+		webPage(c, id, con)
 	}
 }
 
