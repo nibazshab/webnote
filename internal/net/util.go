@@ -1,6 +1,7 @@
 package net
 
 import (
+	"hash/fnv"
 	"regexp"
 	"strings"
 
@@ -17,4 +18,10 @@ var regexUa = regexp.MustCompile(`^(curl|Wget)`)
 
 func reqTypeCheck(c *gin.Context) bool {
 	return regexUa.MatchString(util.GetUserUA(c.Request)) || c.Request.URL.Query().Has("raw")
+}
+
+func convHashId(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
 }

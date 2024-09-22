@@ -51,7 +51,7 @@ go build -ldflags="$flags"
 
 body：`t` 文本内容
 
-- ___GET /{uid}___
+- ___GET /{sid}___
 
 返回该链接所对应的文本内容
 

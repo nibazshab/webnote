@@ -3,14 +3,17 @@ package net
 import "github.com/nibazshab/webnote/internal/db"
 
 func del(id string) {
-	db.Delete(id)
+	hid := convHashId(id)
+	db.Delete(hid)
 }
 
 func ins(id string, con *string) {
-	db.Insert(id, con)
+	hid := convHashId(id)
+	db.Insert(hid, con)
 }
 
 func sel(id string) *string {
-	con := db.Select(id)
+	hid := convHashId(id)
+	con := db.Select(hid)
 	return con
 }

@@ -3,7 +3,7 @@ package db
 import "github.com/nibazshab/webnote/internal/datapath"
 
 type Data struct {
-	ID  string `gorm:"type:char(16);primaryKey"`
+	ID  uint32
 	Con string
 }
 
