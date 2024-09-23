@@ -5,11 +5,11 @@ func Insert(id uint32, con *string) {
 }
 
 func Delete(id uint32) {
-	db.Where(Data{ID: id}).Delete(&Data{})
+	db.Where(&Data{ID: id}).Delete(&Data{})
 }
 
 func Select(id uint32) *string {
-	con := Data{ID: id}
-	db.Where(con).First(&con)
+	con := &Data{ID: id}
+	db.Where(con).First(con)
 	return &con.Con
 }
