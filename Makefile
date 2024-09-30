@@ -6,7 +6,7 @@ FLAG="-s -w --extldflags '-static'"
 
 GOOS=linux
 GOARCH=amd64
-CC=$(PWD)/$(MUSLLIB)/bin/x86_64-linux-musl-gcc
+CC="$(PWD)/$(MUSLLIB)/bin/x86_64-linux-musl-gcc"
 
 all: build
 
