@@ -4,7 +4,7 @@
 
 ### 快速上手
 
-独立的二进制文件，直接运行即可，默认监听 `10003` 端口，使用 SQLite 存储内容，数据和日志位于 webnote_data 目录中
+独立的二进制文件，直接运行即可，默认监听 10003 端口，使用 SQLite 存储内容，数据和日志位于 webnote_data 目录中
 
 ```sh
 ./webnote
@@ -14,25 +14,10 @@
 
 所需软件包：go, musl
 
-go 使用包管理器或任意方式安装，musl 可以通过如下命令安装
+运行 Makefile 文件即可，go 使用包管理器或任意方式安装，musl 将在构建过程中自动安装
 
 ```sh
-musl="https://musl.cc/x86_64-linux-musl-cross.tgz"
-wget -O- "$musl" | tar -zxvf - --strip-components=1 -C /usr/local
-```
-
-开始构建
-
-```sh
-go get ./...
-
-flags="-s -w --extldflags '-static'"
-export GOOS=linux
-export GOARCH=amd64
-export CC=x86_64-linux-musl-gcc
-export CGO_ENABLED=1
-
-go build -ldflags="$flags"
+make
 ```
 
 ### 使用说明
@@ -54,12 +39,6 @@ body：`t` 文本内容
 - ___GET /{sid}___
 
 返回该链接所对应的文本内容
-
----
-
-> [!TIP]
-> - 测试平台：Linux amd64
-> - 暂不支持反向代理到域名子目录
 
 ## PLAN-B
 
