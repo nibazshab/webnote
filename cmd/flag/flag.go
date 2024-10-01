@@ -4,9 +4,9 @@ import "flag"
 
 var Port *string
 
-var _port = "10003"
+const port = "10003"
 
 func init() {
-	Port = flag.String("port", _port, "server port")
+	Port = flag.String("port", port, "server port")
 	flag.Parse()
 }

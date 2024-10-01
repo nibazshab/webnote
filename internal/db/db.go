@@ -7,12 +7,15 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+
+	"github.com/nibazshab/webnote/internal/path"
 )
 
 var db *gorm.DB
 
 func Init() {
 	var err error
+	dbFile := path.GetFilePath(dbFileName)
 
 	db, err = gorm.Open(sqlite.Open(dbFile+"?_journal=WAL&_vacuum=incremental"), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
@@ -31,8 +34,8 @@ func Init() {
 }
 
 func Close() {
-	dB, _ := db.DB()
-	err := dB.Close()
+	_db, _ := db.DB()
+	err := _db.Close()
 	if err != nil {
 		log.Fatalf("db close error: %v", err)
 	}

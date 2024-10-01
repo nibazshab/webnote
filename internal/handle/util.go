@@ -1,4 +1,4 @@
-package net
+package handle
 
 import (
 	"hash/fnv"
@@ -16,12 +16,12 @@ func conTypeCheck(c *gin.Context) bool {
 
 var regexUa = regexp.MustCompile(`^(curl|Wget)`)
 
-func reqTypeCheck(c *gin.Context) bool {
+func reqDataTypeCheck(c *gin.Context) bool {
 	return regexUa.MatchString(util.GetUserUA(c.Request)) || c.Request.URL.Query().Has("raw")
 }
 
-func convHashId(s string) uint32 {
+func convHashId(s *string) uint32 {
 	h := fnv.New32a()
-	h.Write([]byte(s))
+	h.Write([]byte(*s))
 	return h.Sum32()
 }

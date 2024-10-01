@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/nibazshab/webnote/internal/handle"
 	"github.com/nibazshab/webnote/internal/log"
-	"github.com/nibazshab/webnote/internal/net"
 	"github.com/nibazshab/webnote/pkg/util"
 )
 
@@ -16,42 +16,43 @@ func Router(r *gin.Engine) {
 		g := r.Group("/assets")
 		{
 			g.Use(cacheControl)
-			net.Static(g)
+			handle.StaticAssets(g)
 		}
 
 		s.GET("/favicon.ico", cacheControl, func(c *gin.Context) {
 			c.Data(http.StatusOK, "image/x-icon", []byte{})
 		})
 
-		s.GET("/", redirect)
-		s.GET("/:id", get)
-		s.POST("/:id", post)
+		s.GET("/", redirectNewPath)
+		s.GET("/:id", getReqPathId)
+		s.POST("/:id", postReqPathId)
 	}
 }
 
-func get(c *gin.Context) {
+func getReqPathId(c *gin.Context) {
 	id := c.Param("id")
 
 	if urlPathCheck(id) {
-		net.HandleGet(c, id)
+		handle.GetDataById(c, &id)
 	} else {
-		redirect(c)
+		redirectNewPath(c)
 	}
 }
 
-func post(c *gin.Context) {
+func postReqPathId(c *gin.Context) {
 	id := c.Param("id")
 
 	if urlPathCheck(id) {
-		m := net.HandlePost(c, id)
-		if m != 'e' {
-			log.Logging(c, id, m)
+		msg, r := handle.PostDataToId(c, &id)
+		if r {
+			log.Logging(c, id, msg)
 		}
 	} else {
 		c.String(http.StatusBadRequest, "ERROR: invalid path")
 	}
 }
 
-func redirect(c *gin.Context) {
-	c.Redirect(http.StatusFound, "/"+util.RandStr(4))
+func redirectNewPath(c *gin.Context) {
+	const num = 4
+	c.Redirect(http.StatusFound, "/"+util.RandStr(num))
 }

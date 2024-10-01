@@ -1,33 +1,34 @@
-MUSLPKG="https://musl.cc/x86_64-linux-musl-cross.tgz"
-MUSLLIB=musllib
+MUSL_LINK="https://musl.cc/x86_64-linux-musl-cross.tgz"
+MUSL_DIR=musllib
 
-CGO_ENABLED=1
+CC="$(PWD)/$(MUSL_DIR)/bin/x86_64-linux-musl-gcc"
+
 FLAG="-s -w --extldflags '-static'"
 
+CGO_ENABLED=1
 GOOS=linux
 GOARCH=amd64
-CC="$(PWD)/$(MUSLLIB)/bin/x86_64-linux-musl-gcc"
 
 all: build
 
-setupcc:
-	if [ ! -d "$(MUSLLIB)" ]; then \
-		mkdir -p $(MUSLLIB) && \
-		wget -O $(MUSLLIB).tgz $(MUSLPKG) && \
-		tar -zxvf $(MUSLLIB).tgz --strip-components=1 -C $(MUSLLIB) && \
-		rm $(MUSLLIB).tgz; \
-	fi
-
-setupgolib:
+golib:
 	go mod tidy
 
-build: setupcc setupgolib
+cclib:
+	if [ ! -d "$(MUSL_DIR)" ]; then \
+		mkdir -p $(MUSL_DIR) && \
+		wget -O $(MUSL_DIR).tgz $(MUSL_LINK) && \
+		tar -zxvf $(MUSL_DIR).tgz --strip-components=1 -C $(MUSL_DIR) && \
+		rm $(MUSL_DIR).tgz; \
+	fi
+
+build: golib cclib
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) CC=$(CC) go build -ldflags=$(FLAG)
 
 clean:
 	rm -f webnote
 
 cleanall:
-	rm -rf $(MUSLLIB) webnote
+	rm -rf $(MUSL_DIR) webnote
 
-.PHONY: all setupcc setupgolib build clean cleanall
+.PHONY: all golib cclib build clean cleanall

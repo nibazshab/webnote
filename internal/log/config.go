@@ -1,5 +1,7 @@
 package log
 
-import "github.com/nibazshab/webnote/internal/datapath"
+import "github.com/nibazshab/webnote/internal/path"
 
-var logFile = datapath.GetDataFile("log.log")
+const logFileName = "log.log"
+
+var logFile = path.GetFilePath(logFileName)

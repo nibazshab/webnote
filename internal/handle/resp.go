@@ -1,8 +1,7 @@
-package net
+package handle
 
 import (
 	"html/template"
-	"io/fs"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,19 +9,14 @@ import (
 	"github.com/nibazshab/webnote/web"
 )
 
-func webPage(c *gin.Context, id string, con *string) {
+func webPage(c *gin.Context, id *string, con *string) {
 	template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(c.Writer, struct {
-		URL string
+		URL *string
 		CON *string
 	}{
 		URL: id,
 		CON: con,
 	})
-}
-
-func Static(g *gin.RouterGroup) {
-	public, _ := fs.Sub(web.Web, "public/assets")
-	g.StaticFS("/", http.FS(public))
 }
 
 func rawData(c *gin.Context, con *string) {

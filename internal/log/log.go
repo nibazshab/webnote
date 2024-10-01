@@ -11,20 +11,20 @@ import (
 )
 
 func Init() {
-	f, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatalf("log open error: %v", err)
 	}
-	defer f.Close()
+	defer file.Close()
 }
 
-func Logging(c *gin.Context, id string, handle rune) {
-	f, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
-	defer f.Close()
+func Logging(c *gin.Context, id string, msg rune) {
+	file, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
+	defer file.Close()
 
-	multiWriter := io.MultiWriter(os.Stdout, f)
+	multiWriter := io.MultiWriter(os.Stdout, file)
 	log.SetOutput(multiWriter)
-	log.Print(id + " | " + string(handle) + " | " + util.GetUserIP(c.Request) + " | " + util.GetUserUA(c.Request))
+	log.Printf("%s | %c | %s | %s", id, msg, util.GetUserIP(c.Request), util.GetUserUA(c.Request))
 }
 
 func Fatalf(format string, v ...any) {

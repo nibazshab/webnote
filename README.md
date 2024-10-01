@@ -26,7 +26,7 @@ wget -O- "$musl" | tar -zxvf - --strip-components=1 -C /usr/local
 ```sh
 go get ./...
 
-flags="-s -w --extldflags '-static -fpic'"
+flags="-s -w --extldflags '-static'"
 export GOOS=linux
 export GOARCH=amd64
 export CC=x86_64-linux-musl-gcc
@@ -66,8 +66,8 @@ body：`t` 文本内容
 - [x] 解决 favicon.ico 被重定向的问题
 - [x] 变更相对路径为绝对路径
 - [x] 自定义端口号
-- [ ] 改善变量名
-- [ ] 使用结构体传输数据
+- [x] 改善变量名
+- [x] 使用结构体传输数据
 
 ## 许可证
 

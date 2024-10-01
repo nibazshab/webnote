@@ -1,12 +1,11 @@
 package db
 
-import "github.com/nibazshab/webnote/internal/datapath"
+const (
+	dbFileName  = "database.sqlite"
+	tablePrefix = "webnote_"
+)
 
 type Data struct {
 	ID  uint32
 	Con string
 }
-
-var tablePrefix = "webnote_"
-
-var dbFile = datapath.GetDataFile("database.sqlite")
