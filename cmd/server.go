@@ -22,7 +22,12 @@ func Start() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			log.Fatalf("db close error: %v", err)
+		}
+	}()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

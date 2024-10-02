@@ -15,12 +15,27 @@ func Init() {
 	if err != nil {
 		log.Fatalf("log open error: %v", err)
 	}
-	defer file.Close()
+
+	defer func(file *os.File) {
+		err = file.Close()
+		if err != nil {
+			log.Fatalf("log close error: %v", err)
+		}
+	}(file)
 }
 
 func Logging(c *gin.Context, id string, msg rune) {
-	file, _ := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
-	defer file.Close()
+	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Printf("log open error: %v", err)
+	}
+
+	defer func(file *os.File) {
+		err = file.Close()
+		if err != nil {
+			log.Printf("log close error: %v", err)
+		}
+	}(file)
 
 	multiWriter := io.MultiWriter(os.Stdout, file)
 	log.SetOutput(multiWriter)

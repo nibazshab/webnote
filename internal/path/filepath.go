@@ -1,6 +1,7 @@
 package path
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -11,11 +12,18 @@ const dataDir = "webnote_data"
 
 func GetFilePath(filename string) string {
 	if dataPath == "" {
-		exePath, _ := os.Executable()
+		exePath, err := os.Executable()
+		if err != nil {
+			log.Fatalf("data path error: %v", err)
+		}
+
 		dataPath = filepath.Join(filepath.Dir(exePath), dataDir)
 
-		if _, err := os.Stat(dataPath); os.IsNotExist(err) {
-			os.MkdirAll(dataPath, 0o755)
+		if _, err = os.Stat(dataPath); os.IsNotExist(err) {
+			err = os.MkdirAll(dataPath, 0o755)
+			if err != nil {
+				log.Fatalf("data path create error: %v", err)
+			}
 		}
 	}
 

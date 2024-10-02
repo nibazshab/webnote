@@ -33,10 +33,16 @@ func Init() {
 	}
 }
 
-func Close() {
-	_db, _ := db.DB()
-	err := _db.Close()
+func Close() error {
+	_db, err := db.DB()
 	if err != nil {
-		log.Fatalf("db close error: %v", err)
+		return err
 	}
+
+	err = _db.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

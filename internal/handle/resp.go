@@ -2,6 +2,7 @@ package handle
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,18 @@ import (
 )
 
 func webPage(c *gin.Context, id *string, con *string) {
-	template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(c.Writer, struct {
+	err := template.Must(template.ParseFS(web.Web, "public/index.html")).Execute(c.Writer, struct {
 		URL *string
 		CON *string
 	}{
 		URL: id,
 		CON: con,
 	})
+	if err != nil {
+		c.String(http.StatusInternalServerError, "ERROR: internal server error")
+		log.Printf("web page errir: %v", err)
+		return
+	}
 }
 
 func rawData(c *gin.Context, con *string) {

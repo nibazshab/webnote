@@ -13,15 +13,15 @@ import (
 func Router(r *gin.Engine) {
 	s := r.Group("/")
 	{
-		g := r.Group("/assets")
+		s.GET("/favicon.ico", cacheControl, func(c *gin.Context) {
+			c.Data(http.StatusOK, "image/x-icon", []byte{})
+		})
+
+		g := s.Group("/assets")
 		{
 			g.Use(cacheControl)
 			handle.StaticAssets(g)
 		}
-
-		s.GET("/favicon.ico", cacheControl, func(c *gin.Context) {
-			c.Data(http.StatusOK, "image/x-icon", []byte{})
-		})
 
 		s.GET("/", redirectNewPath)
 		s.GET("/:id", getReqPathId)
