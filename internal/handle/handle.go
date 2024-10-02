@@ -50,7 +50,7 @@ func StaticAssets(g *gin.RouterGroup) {
 		g.GET("/*file", func(c *gin.Context) {
 			c.String(http.StatusInternalServerError, "ERROR: internal server error")
 		})
-		log.Printf("static assets errir: %v", err)
+		log.Printf("static assets error: %v", err)
 		return
 	}
 

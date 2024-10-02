@@ -20,7 +20,7 @@ func webPage(c *gin.Context, id *string, con *string) {
 	})
 	if err != nil {
 		c.String(http.StatusInternalServerError, "ERROR: internal server error")
-		log.Printf("web page errir: %v", err)
+		log.Printf("web page error: %v", err)
 		return
 	}
 }
