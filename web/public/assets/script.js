@@ -21,7 +21,7 @@ function sendmsg() {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'f') {
+    if (e.ctrlKey && e.key === 'r') {
         e.preventDefault();
         const re = document.getElementById('re');
         re.style.display = re.style.display === 'block' ? 'none' : 'block';
