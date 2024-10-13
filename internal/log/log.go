@@ -45,3 +45,7 @@ func Logging(c *gin.Context, id string, msg rune) {
 func Fatalf(format string, v ...any) {
 	log.Fatalf(format, v...)
 }
+
+func Printf(format string, v ...any) {
+	log.Printf(format, v...)
+}

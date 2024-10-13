@@ -1,10 +1,10 @@
 package db
 
-type DataMethod interface {
-	WriteData()
-	DeleteData()
-	GetData() *Data
-}
+//type DataMethod interface {
+//	WriteData()
+//	DeleteData()
+//	GetData() *Data
+//}
 
 func (data *Data) WriteData() {
 	db.Save(data)

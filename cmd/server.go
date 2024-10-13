@@ -34,6 +34,7 @@ func Start() {
 
 	router.Router(r)
 
+	log.Printf("start HTTP server @ 0.0.0.0:%s\n", *flag.Port)
 	go func() {
 		if err := r.Run(":" + *flag.Port); err != nil {
 			log.Fatalf("start error: %v", err)
