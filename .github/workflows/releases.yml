@@ -26,6 +26,13 @@ jobs:
         mkdir dist
         tar -czvf dist/webnote-linux-amd64.tar.gz webnote
 
+    - name: Package Arch Linux
+      run: |
+        V=$(git describe --abbrev=0 --tags)
+        sed -i s/pkgver=/pkgver=$V/ .pkg/PKGBUILD
+        mv webnote .pkg
+        docker build --output=dist/ .pkg
+
     - name: Upload Release
       uses: softprops/action-gh-release@v2
       env:
