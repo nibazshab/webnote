@@ -31,7 +31,8 @@ jobs:
         V=$(git describe --abbrev=0 --tags)
         sed -i s/pkgver=/pkgver=$V/ .pkg/PKGBUILD
         mv webnote .pkg
-        docker build --output=dist/ .pkg
+        docker build --output=. .pkg
+        mv webnote-$V-*.pkg.tar.zst dist/
 
     - name: Upload Release
       uses: softprops/action-gh-release@v2
