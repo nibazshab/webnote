@@ -53,7 +53,7 @@ impl AppState {
     }
 }
 
-pub fn conv_hash(uid: &str) -> i64 {
+fn conv_hash(uid: &str) -> i64 {
     let mut hasher = SeaHasher::new();
     hasher.write(uid.as_bytes());
     let hash = hasher.finish();
