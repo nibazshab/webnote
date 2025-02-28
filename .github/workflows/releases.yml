@@ -23,7 +23,7 @@ jobs:
 
       - run: |
           mkdir dist
-          tar -czvf dist/webnote-linux-amd64.tar.gz target/release/webnote
+          tar -czvf dist/webnote-linux-amd64.tar.gz -C target/release webnote
 
       - uses: softprops/action-gh-release@v2
         env:
