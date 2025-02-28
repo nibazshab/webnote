@@ -44,12 +44,25 @@ async fn redirect_path() -> impl Responder {
 }
 
 #[get("/{uid}")]
-async fn get_note(uid: web::Path<String>, data: web::Data<db::AppState>) -> impl Responder {
+async fn get_note(
+    req: HttpRequest,
+    uid: web::Path<String>,
+    data: web::Data<db::AppState>,
+) -> impl Responder {
     let uid = uid.into_inner();
 
     if uid.len() > 16 {
         return generate_path();
     }
+
+    let user_agent = req
+        .headers()
+        .get("User-Agent")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let is_cli_tool = user_agent.contains("curl") || user_agent.contains("wget");
 
     let content = match data.get_content(&uid) {
         Ok(content) => content,
@@ -57,9 +70,15 @@ async fn get_note(uid: web::Path<String>, data: web::Data<db::AppState>) -> impl
         Err(_) => return HttpResponse::InternalServerError().finish(),
     };
 
-    HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(HtmlResponse { uid, content }.render().unwrap())
+    if is_cli_tool {
+        HttpResponse::Ok()
+            .content_type("text/plain; charset=utf-8")
+            .body(content)
+    } else {
+        HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(HtmlResponse { uid, content }.render().unwrap())
+    }
 }
 
 #[post("/")]
