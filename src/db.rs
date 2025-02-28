@@ -12,7 +12,15 @@ pub struct AppState {
 impl AppState {
     pub fn new(db_dir: &str) -> Self {
         let db_path = Path::new(db_dir).join("webnote.db3");
+
         let conn = Connection::open(&db_path).unwrap();
+
+        conn.execute_batch(
+            "PRAGMA journal_mode=WAL;
+            PRAGMA synchronous=NORMAL;
+            PRAGMA wal_autocheckpoint=100;",
+        )
+        .unwrap();
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS webnote (

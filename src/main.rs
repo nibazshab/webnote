@@ -1,6 +1,5 @@
 use actix_web::{App, HttpRequest, HttpResponse, HttpServer, Responder, get, post, web};
 use askama::Template;
-use chrono::Local;
 use clap::Parser;
 use db::AppState;
 use env_logger::Builder;
@@ -94,6 +93,7 @@ async fn save_note(
     data: web::Data<db::AppState>,
 ) -> impl Responder {
     let uid = uid.into_inner();
+
     if uid.len() > 16 {
         return HttpResponse::BadRequest().body("UID <= 16");
     }
@@ -109,8 +109,7 @@ async fn save_note(
                 .unwrap_or_else(|| "unknown".to_string())
         });
 
-    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    info!("{} | {} | {}", uid, timestamp, client_ip);
+    info!("{} | {}", uid, client_ip);
 
     match data.save_content(&uid, &form.t) {
         Ok(_) => HttpResponse::Ok().finish(),
@@ -121,6 +120,7 @@ async fn save_note(
 #[get("/assets/{filename:.*}")]
 async fn static_files(path: web::Path<String>) -> actix_web::HttpResponse {
     let filename = path.into_inner();
+
     match crate::Assets::get(&filename) {
         Some(file) => {
             let mime = mime_guess::from_path(&filename).first_or_octet_stream();
@@ -171,6 +171,7 @@ async fn main() -> std::io::Result<()> {
 
 fn generate_path() -> HttpResponse {
     let random_uid = uid::rand_string(4);
+
     HttpResponse::Found()
         .append_header(("Location", format!("/{}", random_uid)))
         .finish()
@@ -178,6 +179,7 @@ fn generate_path() -> HttpResponse {
 
 fn validate_directory(s: &str) -> Result<String, String> {
     let path = Path::new(s);
+
     if path.is_dir() {
         Ok(s.to_string())
     } else {
