@@ -12,6 +12,19 @@
 ./webnote
 ```
 
+### 构建说明
+
+```sh
+cargo check
+cargo test
+cargo fmt --all -- --check
+cargo clippy -- -D warnings
+```
+
+```sh
+cargo build --verbose --release
+```
+
 ### 使用说明
 
 命令行可以接收的参数

@@ -40,7 +40,7 @@ struct Cli {
 
 #[get("/")]
 async fn redirect_path() -> impl Responder {
-    return generate_path();
+    generate_path()
 }
 
 #[get("/{uid}")]
@@ -64,7 +64,7 @@ async fn get_note(uid: web::Path<String>, data: web::Data<db::AppState>) -> impl
 
 #[post("/")]
 async fn invalid_path() -> impl Responder {
-    return HttpResponse::BadRequest().body("404");
+    HttpResponse::BadRequest().body("404")
 }
 
 #[post("/{uid}")]
