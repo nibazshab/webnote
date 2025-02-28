@@ -29,8 +29,9 @@ struct FormData {
 }
 
 #[derive(Parser)]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
-    #[arg(short = 'P', long, default_value_t = 8080, value_name = "PORT")]
+    #[arg(short = 'P', long, default_value_t = 10003, value_name = "PORT")]
     port: u16,
 
     #[arg(short = 'D', long, value_parser = validate_directory, default_value = ".", value_name = "DIR")]
