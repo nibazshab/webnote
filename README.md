@@ -12,6 +12,18 @@
 ./webnote
 ```
 
+配合 systemd 使用 webnote.service
+
+```ini
+[Unit]
+Description=Webnote service
+[Service]
+ExecStart=/usr/local/webnote/webnote
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+```
+
 ### 构建说明
 
 ```sh

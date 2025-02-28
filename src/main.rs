@@ -80,9 +80,15 @@ async fn save_note(
     }
 
     let client_ip = req
-        .peer_addr()
-        .map(|addr| addr.ip().to_string())
-        .unwrap_or_else(|| "unknown".into());
+        .headers()
+        .get("X-Forwarded-For")
+        .and_then(|header| header.to_str().ok())
+        .and_then(|header| header.split(',').next().map(|ip| ip.trim().to_string()))
+        .unwrap_or_else(|| {
+            req.peer_addr()
+                .map(|addr| addr.ip().to_string())
+                .unwrap_or_else(|| "unknown".to_string())
+        });
 
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     info!("{} | {} | {}", uid, timestamp, client_ip);
