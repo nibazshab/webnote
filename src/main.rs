@@ -64,7 +64,7 @@ async fn get_note(uid: web::Path<String>, data: web::Data<db::AppState>) -> impl
 
 #[post("/")]
 async fn invalid_path() -> impl Responder {
-    HttpResponse::BadRequest().body("404")
+    HttpResponse::BadRequest().finish()
 }
 
 #[post("/{uid}")]
@@ -76,7 +76,7 @@ async fn save_note(
 ) -> impl Responder {
     let uid = uid.into_inner();
     if uid.len() > 16 {
-        return HttpResponse::BadRequest().body("UID must be <= 16 characters");
+        return HttpResponse::BadRequest().body("UID <= 16");
     }
 
     let client_ip = req
@@ -95,7 +95,7 @@ async fn save_note(
 
     match data.save_content(&uid, &form.t) {
         Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().body("Database error"),
+        Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
@@ -116,7 +116,7 @@ async fn static_files(path: web::Path<String>) -> actix_web::HttpResponse {
                 ))
                 .body(file.data.to_vec())
         }
-        None => actix_web::HttpResponse::NotFound().body("404 Not Found"),
+        None => actix_web::HttpResponse::NotFound().finish(),
     }
 }
 
@@ -136,6 +136,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
+            .app_data(web::PayloadConfig::default().limit(52_428_800))
+            .app_data(web::JsonConfig::default().limit(52_428_800))
+            .app_data(web::FormConfig::default().limit(52_428_800))
             .service(redirect_path)
             .service(get_note)
             .service(invalid_path)
