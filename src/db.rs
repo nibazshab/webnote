@@ -26,8 +26,7 @@ SELECT content FROM webnote WHERE hash_key = ?1
 const UPSERT_CONTENT_SQL: &str = "
 INSERT INTO webnote (hash_key, uid, content) VALUES (?1, ?2, ?3)
 ON CONFLICT(hash_key) DO UPDATE SET 
-    content = excluded.content,
-    uid = excluded.uid
+    content = excluded.content
 ";
 
 #[derive(Clone)]

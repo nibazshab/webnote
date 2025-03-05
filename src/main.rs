@@ -190,10 +190,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::PayloadConfig::default().limit(MAX_PAYLOAD_SIZE))
             .app_data(web::JsonConfig::default().limit(MAX_PAYLOAD_SIZE))
             .app_data(web::FormConfig::default().limit(MAX_PAYLOAD_SIZE))
-            .service(redirect_path)
             .service(get_note)
-            .service(invalid_path)
             .service(save_note)
+            .service(redirect_path)
+            .service(invalid_path)
             .service(static_files)
     })
     .bind(("0.0.0.0", cli.port))?
