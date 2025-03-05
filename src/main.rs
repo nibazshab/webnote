@@ -3,13 +3,20 @@ use askama::Template;
 use clap::Parser;
 use db::AppState;
 use env_logger::Builder;
-use log::{LevelFilter, info};
+use log::LevelFilter;
 use rust_embed::RustEmbed;
 use serde::Deserialize;
-use std::{path::Path, time::Duration};
+use std::path::Path;
 
 mod db;
 mod uid;
+
+const DEFAULT_PORT: u16 = 10003;
+const DEFAULT_UID_LENGTH: usize = 4;
+const MAX_UID_LENGTH: usize = 16;
+const CACHE_DURATION_SECONDS: u64 = 60 * 60 * 24;
+const MAX_PAYLOAD_SIZE: usize = 50 << 20;
+const CLI_USER_AGENTS: [&str; 2] = ["curl", "wget"];
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -30,7 +37,7 @@ struct FormData {
 #[derive(Parser)]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
-    #[arg(short = 'P', long, default_value_t = 10003, value_name = "PORT")]
+    #[arg(short = 'P', long, default_value_t = DEFAULT_PORT, value_name = "PORT")]
     port: u16,
 
     #[arg(short = 'D', long, value_parser = validate_directory, value_name = "DIR")]
@@ -46,11 +53,11 @@ async fn redirect_path() -> impl Responder {
 async fn get_note(
     req: HttpRequest,
     uid: web::Path<String>,
-    data: web::Data<db::AppState>,
+    data: web::Data<AppState>,
 ) -> impl Responder {
     let uid = uid.into_inner();
 
-    if uid.len() > 16 {
+    if uid.len() > MAX_UID_LENGTH {
         return generate_path();
     }
 
@@ -61,7 +68,9 @@ async fn get_note(
         .unwrap_or("")
         .to_lowercase();
 
-    let is_cli_tool = user_agent.contains("curl") || user_agent.contains("wget");
+    let is_cli_tool = CLI_USER_AGENTS
+        .iter()
+        .any(|agent| user_agent.contains(agent));
 
     let content = match data.get_content(&uid) {
         Ok(content) => content,
@@ -76,7 +85,11 @@ async fn get_note(
     } else {
         HttpResponse::Ok()
             .content_type("text/html; charset=utf-8")
-            .body(HtmlResponse { uid, content }.render().unwrap())
+            .body(
+                HtmlResponse { uid, content }
+                    .render()
+                    .expect("Template rendering failed"),
+            )
     }
 }
 
@@ -90,12 +103,12 @@ async fn save_note(
     req: HttpRequest,
     uid: web::Path<String>,
     form: web::Form<FormData>,
-    data: web::Data<db::AppState>,
+    data: web::Data<AppState>,
 ) -> impl Responder {
     let uid = uid.into_inner();
 
-    if uid.len() > 16 {
-        return HttpResponse::BadRequest().body("UID <= 16");
+    if uid.len() > MAX_UID_LENGTH {
+        return HttpResponse::BadRequest().body(format!("UID length exceeds {}", MAX_UID_LENGTH));
     }
 
     let client_ip = req
@@ -109,7 +122,7 @@ async fn save_note(
                 .unwrap_or_else(|| "unknown".to_string())
         });
 
-    info!("{} | {}", uid, client_ip);
+    log::info!("{} | {}", uid, client_ip);
 
     match data.save_content(&uid, &form.t) {
         Ok(_) => HttpResponse::Ok().finish(),
@@ -121,17 +134,15 @@ async fn save_note(
 async fn static_files(path: web::Path<String>) -> actix_web::HttpResponse {
     let filename = path.into_inner();
 
-    match crate::Assets::get(&filename) {
+    match Assets::get(&filename) {
         Some(file) => {
             let mime = mime_guess::from_path(&filename).first_or_octet_stream();
 
-            let cache_duration = Duration::from_secs(86400);
-
             actix_web::HttpResponse::Ok()
-                .append_header(("content-type", mime.as_ref()))
+                .content_type(mime.as_ref())
                 .append_header((
                     "cache-control",
-                    format!("public, max-age={}", cache_duration.as_secs()),
+                    format!("public, max-age={}", CACHE_DURATION_SECONDS),
                 ))
                 .body(file.data.to_vec())
         }
@@ -144,15 +155,18 @@ async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     let db_dir = cli.db_dir.unwrap_or_else(|| {
-        let exe_path = std::env::current_exe()
-            .expect("Path error");
-        let exe_dir = exe_path.parent()
-            .expect("Path error");
-        let default_path = exe_dir.join(".");
-        let path_str = default_path.to_str()
-            .expect("Path error")
-            .to_string();
-        path_str
+        let exe_path = std::env::current_exe().unwrap_or_else(|e| {
+            log::error!("{}", e);
+            std::process::exit(1);
+        });
+        exe_path
+            .parent()
+            .unwrap_or_else(|| {
+                log::error!("{}", "Path error");
+                std::process::exit(1);
+            })
+            .to_string_lossy()
+            .into_owned()
     });
 
     Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -160,16 +174,22 @@ async fn main() -> std::io::Result<()> {
         .filter_module("actix_web", LevelFilter::Warn)
         .init();
 
-    info!("Webnote starting on http://0.0.0.0:{}", cli.port);
+    log::info!("Webnote starting on http://0.0.0.0:{}", cli.port);
 
-    let state = web::Data::new(AppState::new(&db_dir));
+    let state = match AppState::new(&db_dir) {
+        Ok(app_state) => web::Data::new(app_state),
+        Err(e) => {
+            log::error!("{}", e);
+            std::process::exit(1);
+        }
+    };
 
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .app_data(web::PayloadConfig::default().limit(52_428_800))
-            .app_data(web::JsonConfig::default().limit(52_428_800))
-            .app_data(web::FormConfig::default().limit(52_428_800))
+            .app_data(web::PayloadConfig::default().limit(MAX_PAYLOAD_SIZE))
+            .app_data(web::JsonConfig::default().limit(MAX_PAYLOAD_SIZE))
+            .app_data(web::FormConfig::default().limit(MAX_PAYLOAD_SIZE))
             .service(redirect_path)
             .service(get_note)
             .service(invalid_path)
@@ -182,7 +202,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 fn generate_path() -> HttpResponse {
-    let random_uid = uid::rand_string(4);
+    let random_uid = uid::rand_string(DEFAULT_UID_LENGTH);
 
     HttpResponse::Found()
         .append_header(("Location", format!("/{}", random_uid)))
@@ -191,10 +211,7 @@ fn generate_path() -> HttpResponse {
 
 fn validate_directory(s: &str) -> Result<String, String> {
     let path = Path::new(s);
-
-    if path.is_dir() {
-        Ok(s.to_string())
-    } else {
-        Err("必须是一个有效的目录".into())
-    }
+    path.is_dir()
+        .then(|| s.to_string())
+        .ok_or_else(|| "必须是一个有效的目录".into())
 }
