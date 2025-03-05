@@ -33,8 +33,8 @@ struct Cli {
     #[arg(short = 'P', long, default_value_t = 10003, value_name = "PORT")]
     port: u16,
 
-    #[arg(short = 'D', long, value_parser = validate_directory, default_value = ".", value_name = "DIR")]
-    db_dir: String,
+    #[arg(short = 'D', long, value_parser = validate_directory, value_name = "DIR")]
+    db_dir: Option<String>,
 }
 
 #[get("/")]
@@ -143,6 +143,18 @@ async fn static_files(path: web::Path<String>) -> actix_web::HttpResponse {
 async fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
+    let db_dir = cli.db_dir.unwrap_or_else(|| {
+        let exe_path = std::env::current_exe()
+            .expect("Path error");
+        let exe_dir = exe_path.parent()
+            .expect("Path error");
+        let default_path = exe_dir.join(".");
+        let path_str = default_path.to_str()
+            .expect("Path error")
+            .to_string();
+        path_str
+    });
+
     Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .filter_module("actix_server", LevelFilter::Warn)
         .filter_module("actix_web", LevelFilter::Warn)
@@ -150,7 +162,7 @@ async fn main() -> std::io::Result<()> {
 
     info!("Webnote starting on http://0.0.0.0:{}", cli.port);
 
-    let state = web::Data::new(AppState::new(&cli.db_dir));
+    let state = web::Data::new(AppState::new(&db_dir));
 
     HttpServer::new(move || {
         App::new()

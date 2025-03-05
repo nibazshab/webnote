@@ -44,7 +44,7 @@ cargo build --verbose --release
 | 参数 | 默认值 | 描述 |
 |-|-|-|
 | -P, --port | 10003 | 程序监听的端口号 |
-| -D, --db-dir | . | 数据目录 |
+| -D, --db-dir | 程序同目录 | 数据目录 |
 
 ### API
 
