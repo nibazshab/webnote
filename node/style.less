@@ -1,87 +1,87 @@
 body {
     background: #e9edf0;
+}
 
-    .bg {
-        position: absolute;
-        top: 15px;
-        bottom: 15px;
-        left: 15px;
-        right: 15px;
+.bg {
+    position: absolute;
+    top: 15px;
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
 
-        textarea {
-            width: 100%;
-            height: 100%;
-            padding: 20px;
-            border: 0;
-            outline: none;
-            resize: none;
-            box-sizing: border-box;
+    textarea {
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        border: 0;
+        outline: none;
+        resize: none;
+        box-sizing: border-box;
+    }
+}
+
+.re {
+    position: fixed;
+    top: 5%;
+    right: 5%;
+    border-left: 6px solid #718493;
+    background-color: #e9edf0;
+    padding: 10px;
+    display: none;
+
+    button,
+    input {
+        border: 1px solid #718493;
+        background-color: #fff;
+        outline: none;
+        box-sizing: border-box;
+        vertical-align: middle;
+    }
+
+    input {
+        width: 150px;
+        height: 25px;
+    }
+
+    button {
+        width: 50px;
+        height: 25px;
+        cursor: pointer;
+
+        &:hover {
+            border-color: #017acc;
+            background-color: lighten(#017acc, 35%);
         }
+    }
+}
+
+.visible {
+    display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+    background: #393939;
+
+    .bg textarea {
+        background: darken(#393939, 10%);
+        color: #d4d4d4;
     }
 
     .re {
-        position: fixed;
-        top: 5%;
-        right: 5%;
-        border-left: 6px solid #718493;
-        background-color: #e9edf0;
-        padding: 10px;
-        display: none;
+        border-color: lighten(#393939, 15%);
+        background-color: #393939;
 
         button,
         input {
-            border: 1px solid #718493;
-            background-color: #fff;
-            outline: none;
-            box-sizing: border-box;
-            vertical-align: middle;
-        }
-
-        input {
-            width: 150px;
-            height: 25px;
-        }
-
-        button {
-            width: 50px;
-            height: 25px;
-            cursor: pointer;
-
-            &:hover {
-                border-color: #017acc;
-                background-color: lighten(#017acc, 35%);
-            }
-        }
-    }
-
-    .visible {
-        display: block;
-    }
-
-    @media (prefers-color-scheme: dark) {
-        background: #393939;
-
-        .bg textarea {
-            background: darken(#393939, 10%);
+            border-color: lighten(#393939, 15%);
+            background-color: darken(#393939, 10%);
             color: #d4d4d4;
         }
 
-        .re {
-            border-color: lighten(#393939, 15%);
-            background-color: #393939;
-
-            button,
-            input {
-                border-color: lighten(#393939, 15%);
-                background-color: darken(#393939, 10%);
-                color: #d4d4d4;
-            }
-
-            button {
-                &:hover {
-                    border-color: #0b78fe;
-                    background-color: darken(#0b78fe, 35%);
-                }
+        button {
+            &:hover {
+                border-color: #0b78fe;
+                background-color: darken(#0b78fe, 35%);
             }
         }
     }
