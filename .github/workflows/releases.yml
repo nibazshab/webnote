@@ -19,6 +19,12 @@ jobs:
           toolchain: stable
           override: true
 
+      - run: |
+          npm install -g typescript terser less less-plugin-clean-css
+          tsc node/script.ts
+          terser node/script.js -o templates/assets/script.js -c -m
+          lessc --clean-css node/style.less templates/assets/style.css
+
       - run: cargo build --verbose --release
 
       - run: |
