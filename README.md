@@ -34,7 +34,8 @@ cargo clippy -- -D warnings
 ```
 
 ```sh
-cargo build --verbose --release
+cd node && npm install && npm build
+cd .. && cargo build --verbose --release
 ```
 
 ### 使用说明

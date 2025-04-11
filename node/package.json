@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "build:ts": "tsc script.ts && terser script.js -o ../templates/assets/script.js -c -m",
+    "build:css": "lessc style.less ../templates/assets/style.css --clean-css",
+    "build": "npm run build:js && npm run build:css"
+  },
+  "dependencies": {
+    "less": "^4.3.0",
+    "less-plugin-clean-css": "^1.6.0",
+    "terser": "^5.39.0",
+    "typescript": "^5.8.3"
+  }
+}
