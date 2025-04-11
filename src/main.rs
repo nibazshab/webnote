@@ -31,7 +31,7 @@ struct Assets;
 
 #[derive(Deserialize)]
 struct FormData {
-    t: String,
+    t: Option<String>,
 }
 
 #[derive(Parser)]
@@ -102,7 +102,7 @@ async fn invalid_path() -> impl Responder {
 async fn save_note(
     req: HttpRequest,
     uid: web::Path<String>,
-    form: web::Form<FormData>,
+    payload: web::Bytes,
     data: web::Data<AppState>,
 ) -> impl Responder {
     let uid = uid.into_inner();
@@ -110,6 +110,19 @@ async fn save_note(
     if uid.len() > MAX_UID_LENGTH {
         return HttpResponse::BadRequest().body(format!("UID length exceeds {}", MAX_UID_LENGTH));
     }
+
+    let content = match serde_urlencoded::from_bytes::<FormData>(&payload)
+        .ok()
+        .and_then(|form| form.t)
+    {
+        Some(text) if validate_text(&text) => text,
+        Some(_) => return HttpResponse::BadRequest().finish(),
+        None => match String::from_utf8(payload.to_vec()) {
+            Ok(text) if validate_text(&text) => text,
+            Ok(_) => return HttpResponse::BadRequest().finish(),
+            Err(_) => return HttpResponse::BadRequest().finish(),
+        },
+    };
 
     let client_ip = req
         .headers()
@@ -124,7 +137,7 @@ async fn save_note(
 
     log::info!("{} | {}", uid, client_ip);
 
-    match data.save_content(&uid, &form.t) {
+    match data.save_content(&uid, &content) {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
@@ -214,4 +227,9 @@ fn validate_directory(s: &str) -> Result<String, String> {
     path.is_dir()
         .then(|| s.to_string())
         .ok_or_else(|| "必须是一个有效的目录".into())
+}
+
+fn validate_text(text: &str) -> bool {
+    text.chars()
+        .all(|c| !c.is_control() || matches!(c, '\n' | '\r' | '\t'))
 }

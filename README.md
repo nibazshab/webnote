@@ -57,6 +57,8 @@ cd .. && cargo build --verbose --release
 ```sh
 # /{uid} post
 curl -d t="text" 127.0.0.1:10003/p
+curl -d "text" 127.0.0.1:10003/p
+cat /etc/hosts | curl 127.0.0.1:10003/p -v --data-binary @-
 
 # /{uid} get
 curl 127.0.0.1:10003/p

@@ -1880,7 +1880,7 @@ dependencies = [
 
 [[package]]
 name = "webnote"
-version = "2.0.2"
+version = "2.0.4"
 dependencies = [
  "actix-web",
  "askama",
@@ -1894,6 +1894,7 @@ dependencies = [
  "rust-embed",
  "seahash",
  "serde",
+ "serde_urlencoded",
 ]
 
 [[package]]
