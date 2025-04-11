@@ -70,7 +70,6 @@ const replace = (): void => {
         if (a) {
             con.value = con.value.split(a).join(b);
             send();
-            con_a = con.value;
         }
     });
 
