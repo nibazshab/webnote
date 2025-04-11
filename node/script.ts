@@ -48,21 +48,17 @@ document.addEventListener('keydown', (e: KeyboardEvent): void => {
 
 const replace = (): void => {
     re = document.createElement('div');
-    re.id = 're';
     re.className = 're';
 
     re_a = document.createElement('input');
-    re_a.id = 't_a';
     re_a.type = 'text';
     re_a.placeholder = '查找';
 
     re_b = document.createElement('input');
-    re_b.id = 't_b';
     re_b.type = 'text';
     re_b.placeholder = '替换为';
 
     const re_r = document.createElement('button');
-    re_r.id = 'b_re';
     re_r.textContent = '替换';
 
     re_r.addEventListener('click', (): void => {
