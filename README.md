@@ -47,10 +47,10 @@ cd .. && cargo build --verbose --release
 
 ### API
 
-| 参数 | 默认值 | 描述 |
+| 路径 | 方法 | 描述 |
 |-|-|-|
-| /{uid} | POST | 表单数据：t = 文本内容 |
-| /{uid} | GET | 文本内容 |
+| /{uid} | POST | 发送表单数据：t = 文本内容 |
+| /{uid} | GET | 获取文本内容 |
 
 示例
 
