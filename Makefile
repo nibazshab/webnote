@@ -1,7 +1,7 @@
-MUSL_LINK="https://musl.cc/x86_64-linux-musl-cross.tgz"
-MUSL_DIR=musllib
+MUSL_LINK=https://musl.cc/x86_64-linux-musl-cross.tgz
+MUSL_DIR=muslgcc
+CC="$(CURDIR)/$(MUSL_DIR)/bin/x86_64-linux-musl-gcc"
 
-CC="$(PWD)/$(MUSL_DIR)/bin/x86_64-linux-musl-gcc"
 
 FLAG="-s -w --extldflags '-static' \
  -X github.com/nibazshab/webnote/cmd/flag.Version=$(VERSION)"
@@ -14,24 +14,18 @@ VERSION=$(shell git describe --abbrev=0 --tags)
 
 all: build
 
-golib:
+deps:
 	go mod tidy
 
-cclib:
-	if [ ! -d "$(MUSL_DIR)" ]; then \
-		mkdir -p $(MUSL_DIR) && \
-		wget -O $(MUSL_DIR).tgz $(MUSL_LINK) && \
-		tar -zxvf $(MUSL_DIR).tgz --strip-components=1 -C $(MUSL_DIR) && \
-		rm $(MUSL_DIR).tgz; \
-	fi
+$(CC):
+	mkdir -p $(MUSL_DIR)
+	wget -O $(MUSL_DIR).tgz $(MUSL_LINK)
+	tar -zxf $(MUSL_DIR).tgz --strip-components=1 -C $(MUSL_DIR)
 
-build: golib cclib
+build: deps $(CC)
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) CC=$(CC) go build -ldflags=$(FLAG)
 
 clean:
-	rm -f webnote
+	rm -rf $(MUSL_DIR) $(MUSL_DIR).tgz
 
-cleanall:
-	rm -rf $(MUSL_DIR) webnote
-
-.PHONY: all golib cclib build clean cleanall
+.PHONY: all deps build clean
