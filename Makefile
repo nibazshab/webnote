@@ -2,7 +2,6 @@ MUSL_LINK=https://musl.cc/x86_64-linux-musl-cross.tgz
 MUSL_DIR=muslgcc
 CC="$(CURDIR)/$(MUSL_DIR)/bin/x86_64-linux-musl-gcc"
 
-
 FLAG="-s -w --extldflags '-static' \
  -X github.com/nibazshab/webnote/cmd/flag.Version=$(VERSION)"
 
