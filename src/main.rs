@@ -1,27 +1,27 @@
-use actix_web::{App, HttpRequest, HttpResponse, HttpServer, Responder, get, post, web};
+mod utils;
+
 use askama::Template;
-use clap::Parser;
-use db::AppState;
-use env_logger::Builder;
-use log::LevelFilter;
+use axum::Router;
+use axum::body::Bytes;
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, State};
+use axum::http::{StatusCode, header};
+use axum::response::{Html, IntoResponse, Redirect};
+use axum::routing::get;
 use rust_embed::RustEmbed;
 use serde::Deserialize;
-use std::path::Path;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
+use sqlx::{Error, FromRow, Row, SqlitePool};
+use std::net::SocketAddr;
+use std::str::FromStr;
+use std::{env, path};
+use tokio::net::TcpListener;
+use tower::ServiceBuilder;
+use tracing::{error, info};
 
-mod db;
-mod uid;
-
-const DEFAULT_PORT: u16 = 10003;
-const DEFAULT_UID_LENGTH: usize = 4;
-const MAX_UID_LENGTH: usize = 16;
-const CACHE_DURATION_SECONDS: u64 = 60 * 60 * 24;
-const MAX_PAYLOAD_SIZE: usize = 50 << 20;
-const CLI_USER_AGENTS: [&str; 2] = ["curl", "wget"];
-
-#[derive(Template)]
+#[derive(FromRow, Template)]
 #[template(path = "index.html")]
-struct HtmlResponse {
-    uid: String,
+struct Note {
+    id: String,
     content: String,
 }
 
@@ -29,207 +29,235 @@ struct HtmlResponse {
 #[folder = "templates/assets/"]
 struct Assets;
 
-#[derive(Deserialize)]
-struct FormData {
-    t: Option<String>,
-}
+#[tokio::main]
+async fn main() {
+    println!("Version {}", env!("CARGO_PKG_VERSION"));
 
-#[derive(Parser)]
-#[command(version = env!("CARGO_PKG_VERSION"))]
-struct Cli {
-    #[arg(short = 'P', long, default_value_t = DEFAULT_PORT, value_name = "PORT")]
-    port: u16,
+    tracing_subscriber::fmt().with_target(false).init();
 
-    #[arg(short = 'D', long, value_parser = validate_directory, value_name = "DIR")]
-    db_dir: Option<String>,
-}
+    let pool = init_database().await.unwrap();
 
-#[get("/")]
-async fn redirect_path() -> impl Responder {
-    generate_path()
-}
-
-#[get("/{uid}")]
-async fn get_note(
-    req: HttpRequest,
-    uid: web::Path<String>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let uid = uid.into_inner();
-
-    if uid.len() > MAX_UID_LENGTH {
-        return generate_path();
-    }
-
-    let user_agent = req
-        .headers()
-        .get("User-Agent")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("")
-        .to_lowercase();
-
-    let is_cli_tool = CLI_USER_AGENTS
-        .iter()
-        .any(|agent| user_agent.contains(agent));
-
-    let content = match data.get_content(&uid) {
-        Ok(content) => content,
-        Err(rusqlite::Error::QueryReturnedNoRows) => String::new(),
-        Err(_) => return HttpResponse::InternalServerError().finish(),
-    };
-
-    if is_cli_tool {
-        HttpResponse::Ok()
-            .content_type("text/plain; charset=utf-8")
-            .body(content)
-    } else {
-        HttpResponse::Ok()
-            .content_type("text/html; charset=utf-8")
-            .body(
-                HtmlResponse { uid, content }
-                    .render()
-                    .expect("Template rendering failed"),
-            )
-    }
-}
-
-#[post("/")]
-async fn invalid_path() -> impl Responder {
-    HttpResponse::BadRequest().finish()
-}
-
-#[post("/{uid}")]
-async fn save_note(
-    req: HttpRequest,
-    uid: web::Path<String>,
-    payload: web::Bytes,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let uid = uid.into_inner();
-
-    if uid.len() > MAX_UID_LENGTH {
-        return HttpResponse::BadRequest().body(format!("UID length exceeds {}", MAX_UID_LENGTH));
-    }
-
-    let content = match serde_urlencoded::from_bytes::<FormData>(&payload)
+    let port: u16 = env::var("PORT")
         .ok()
-        .and_then(|form| form.t)
-    {
-        Some(text) if validate_text(&text) => text,
-        Some(_) => return HttpResponse::BadRequest().finish(),
-        None => match String::from_utf8(payload.to_vec()) {
-            Ok(text) if validate_text(&text) => text,
-            Ok(_) => return HttpResponse::BadRequest().finish(),
-            Err(_) => return HttpResponse::BadRequest().finish(),
-        },
-    };
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8080);
 
-    let client_ip = req
-        .headers()
-        .get("X-Forwarded-For")
-        .and_then(|header| header.to_str().ok())
-        .and_then(|header| header.split(',').next().map(|ip| ip.trim().to_string()))
-        .unwrap_or_else(|| {
-            req.peer_addr()
-                .map(|addr| addr.ip().to_string())
-                .unwrap_or_else(|| "unknown".to_string())
-        });
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = TcpListener::bind(addr).await.unwrap();
 
-    log::info!("{} | {}", uid, client_ip);
+    let app = Router::new()
+        .route("/{id}", get(path_get).post(path_post))
+        .route("/", get(root_get).post(root_post))
+        .route("/assets/{file}", get(assets))
+        .with_state(pool)
+        .layer(ServiceBuilder::new().layer(DefaultBodyLimit::max(5 << 20)));
 
-    match data.save_content(&uid, &content) {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    println!("Server running on {}", addr);
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
-#[get("/assets/{filename:.*}")]
-async fn static_files(path: web::Path<String>) -> actix_web::HttpResponse {
-    let filename = path.into_inner();
-
-    match Assets::get(&filename) {
-        Some(file) => {
-            let mime = mime_guess::from_path(&filename).first_or_octet_stream();
-
-            actix_web::HttpResponse::Ok()
-                .content_type(mime.as_ref())
-                .append_header((
-                    "cache-control",
-                    format!("public, max-age={}", CACHE_DURATION_SECONDS),
-                ))
-                .body(file.data.to_vec())
-        }
-        None => actix_web::HttpResponse::NotFound().finish(),
-    }
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let cli = Cli::parse();
-
-    let db_dir = cli.db_dir.unwrap_or_else(|| {
-        let exe_path = std::env::current_exe().unwrap_or_else(|e| {
-            log::error!("{}", e);
-            std::process::exit(1);
-        });
-        exe_path
-            .parent()
-            .unwrap_or_else(|| {
-                log::error!("{}", "Path error");
-                std::process::exit(1);
-            })
-            .to_string_lossy()
-            .into_owned()
+async fn init_database() -> Result<SqlitePool, Error> {
+    let dir = env::var("DATA_DIR").ok().unwrap_or_else(|| {
+        let mut path = env::current_exe().unwrap();
+        path.pop();
+        path.display().to_string()
     });
 
-    Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .filter_module("actix_server", LevelFilter::Warn)
-        .filter_module("actix_web", LevelFilter::Warn)
-        .init();
+    let db_url = path::Path::new(format!("sqlite:{}", dir).as_str())
+        .join("note.db")
+        .display()
+        .to_string();
 
-    log::info!("Webnote starting on http://0.0.0.0:{}", cli.port);
+    let options = SqliteConnectOptions::from_str(&*db_url)?
+        .journal_mode(SqliteJournalMode::Wal)
+        .synchronous(SqliteSynchronous::Normal)
+        .create_if_missing(true);
 
-    let state = match AppState::new(&db_dir) {
-        Ok(app_state) => web::Data::new(app_state),
-        Err(e) => {
-            log::error!("{}", e);
-            std::process::exit(1);
-        }
+    println!("Connecting to {}", db_url);
+    let pool = SqlitePool::connect_with(options).await?;
+
+    create_table(&pool).await?;
+    Ok(pool)
+}
+
+async fn path_get(
+    Path(id): Path<String>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    State(pool): State<SqlitePool>,
+    headers: header::HeaderMap,
+) -> impl IntoResponse {
+    if id.len() > 64 {
+        return Redirect::temporary(&*utils::rand_string(4)).into_response();
+    }
+
+    let mut note = Note {
+        id: id.clone(),
+        content: "".to_string(),
     };
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(state.clone())
-            .app_data(web::PayloadConfig::default().limit(MAX_PAYLOAD_SIZE))
-            .app_data(web::JsonConfig::default().limit(MAX_PAYLOAD_SIZE))
-            .app_data(web::FormConfig::default().limit(MAX_PAYLOAD_SIZE))
-            .service(get_note)
-            .service(save_note)
-            .service(redirect_path)
-            .service(invalid_path)
-            .service(static_files)
-    })
-    .bind(("0.0.0.0", cli.port))?
-    .run()
-    .await
+    if let Err(e) = note.select(&pool).await {
+        error!("{} - {} - {}", id, e, addr);
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+
+    let ua = headers
+        .get(header::USER_AGENT)
+        .and_then(|ua| ua.to_str().ok())
+        .unwrap_or_default();
+
+    const CLI: [&str; 2] = ["curl", "wget"];
+    let is_cli = CLI.iter().any(|agent| ua.contains(agent));
+
+    info!("[get] {} - {} - {}", id, addr, ua);
+    if is_cli {
+        (
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            note.content,
+        )
+            .into_response()
+    } else {
+        let html = note.render().unwrap();
+        Html(html).into_response()
+    }
 }
 
-fn generate_path() -> HttpResponse {
-    let random_uid = uid::rand_string(DEFAULT_UID_LENGTH);
+async fn path_post(
+    Path(id): Path<String>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    State(pool): State<SqlitePool>,
+    headers: header::HeaderMap,
+    bytes: Bytes,
+) -> impl IntoResponse {
+    if id.len() > 64 {
+        return (
+            StatusCode::BAD_REQUEST,
+            "Invalid, expecting id length < 64.",
+        )
+            .into_response();
+    }
 
-    HttpResponse::Found()
-        .append_header(("Location", format!("/{}", random_uid)))
-        .finish()
+    #[derive(Deserialize)]
+    struct Payload {
+        t: String,
+    }
+
+    let t = 'a: {
+        if let Ok(form) = serde_urlencoded::from_bytes::<Payload>(&bytes) {
+            break 'a form;
+        }
+
+        if let Ok(t) = String::from_utf8(bytes.to_vec()) {
+            break 'a Payload { t };
+        }
+
+        return (
+            StatusCode::BAD_REQUEST,
+            "Invalid, expecting a form with 't' field.",
+        )
+            .into_response();
+    };
+
+    let ua = headers
+        .get(header::USER_AGENT)
+        .and_then(|ua| ua.to_str().ok())
+        .unwrap_or_default();
+
+    let note = Note {
+        id: id.clone(),
+        content: t.t,
+    };
+
+    match note.upsert(&pool).await {
+        Ok(_) => {
+            info!("[post] {} - {} - {}", id, addr, ua);
+            StatusCode::OK.into_response()
+        }
+        Err(e) => {
+            error!("{} - {} - {}", id, e, addr);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
 }
 
-fn validate_directory(s: &str) -> Result<String, String> {
-    let path = Path::new(s);
-    path.is_dir()
-        .then(|| s.to_string())
-        .ok_or_else(|| "必须是一个有效的目录".into())
+async fn root_get() -> Redirect {
+    Redirect::temporary(&*utils::rand_string(4))
 }
 
-fn validate_text(text: &str) -> bool {
-    text.chars()
-        .all(|c| !c.is_control() || matches!(c, '\n' | '\r' | '\t'))
+async fn root_post() -> StatusCode {
+    StatusCode::BAD_REQUEST
+}
+
+impl Note {
+    async fn upsert(&self, pool: &SqlitePool) -> Result<(), Error> {
+        let key = utils::hash(&self.id);
+
+        sqlx::query(
+            "
+INSERT INTO notes (key, id, content) VALUES (?1, ?2, ?3)
+ON CONFLICT(key) DO UPDATE SET
+    content = excluded.content
+",
+        )
+        .bind(key)
+        .bind(&self.id)
+        .bind(&self.content)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn select(&mut self, pool: &SqlitePool) -> Result<(), Error> {
+        let key = utils::hash(&self.id);
+
+        if let Some(rs) = sqlx::query("SELECT content FROM notes WHERE key = ?")
+            .bind(key)
+            .fetch_optional(pool)
+            .await?
+        {
+            self.content = rs.get("content")
+        }
+
+        Ok(())
+    }
+}
+
+async fn create_table(pool: &SqlitePool) -> Result<(), Error> {
+    sqlx::query(
+        "
+CREATE TABLE IF NOT EXISTS notes (
+    key INTEGER PRIMARY KEY,
+    id TEXT NOT NULL,
+    content TEXT NOT NULL
+)",
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+async fn assets(Path(file): Path<String>) -> impl IntoResponse {
+    match Assets::get(&file) {
+        Some(obj) => {
+            let mime = mime_guess::from_path(&file).first_or_octet_stream();
+            (
+                [
+                    (header::CONTENT_TYPE, mime.as_ref()),
+                    (
+                        header::CACHE_CONTROL,
+                        format!("public, max-age={}", 60 * 60 * 24 * 7).as_str(),
+                    ),
+                ],
+                obj.data,
+            )
+                .into_response()
+        }
+        None => StatusCode::NOT_FOUND.into_response(),
+    }
 }
