@@ -1,7 +1,6 @@
 use ahash::RandomState;
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
-use std::hash::{BuildHasher, Hash, Hasher};
 
 pub fn hash(t: &str) -> i64 {
     const SEEDS: [u64; 4] = [
@@ -11,9 +10,8 @@ pub fn hash(t: &str) -> i64 {
         0xca42_0223_28d8_0700,
     ];
 
-    let mut s = RandomState::with_seeds(SEEDS[0], SEEDS[1], SEEDS[2], SEEDS[3]).build_hasher();
-    t.hash(&mut s);
-    s.finish() as i64
+    let s = RandomState::with_seeds(SEEDS[0], SEEDS[1], SEEDS[2], SEEDS[3]);
+    s.hash_one(t) as i64
 }
 
 pub fn rand_string(n: usize) -> String {

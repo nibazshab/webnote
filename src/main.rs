@@ -52,7 +52,7 @@ async fn main() {
         .with_state(pool)
         .layer(ServiceBuilder::new().layer(DefaultBodyLimit::max(5 << 20)));
 
-    println!("Server running on {}", addr);
+    println!("Server running on {addr}");
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
@@ -68,17 +68,17 @@ async fn init_database() -> Result<SqlitePool, Error> {
         path.display().to_string()
     });
 
-    let db_url = path::Path::new(format!("sqlite:{}", dir).as_str())
+    let db_url = path::Path::new(format!("sqlite:{dir}").as_str())
         .join("note.db")
         .display()
         .to_string();
 
-    let options = SqliteConnectOptions::from_str(&*db_url)?
+    let options = SqliteConnectOptions::from_str(&db_url)?
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
         .create_if_missing(true);
 
-    println!("Connecting to {}", db_url);
+    println!("Connecting to {db_url}");
     let pool = SqlitePool::connect_with(options).await?;
 
     create_table(&pool).await?;
@@ -92,7 +92,7 @@ async fn path_get(
     headers: header::HeaderMap,
 ) -> impl IntoResponse {
     if id.len() > 64 {
-        return Redirect::temporary(&*utils::rand_string(4)).into_response();
+        return Redirect::temporary(&utils::rand_string(4)).into_response();
     }
 
     let mut note = Note {
@@ -185,7 +185,7 @@ async fn path_post(
 }
 
 async fn root_get() -> Redirect {
-    Redirect::temporary(&*utils::rand_string(4))
+    Redirect::temporary(&utils::rand_string(4))
 }
 
 async fn root_post() -> StatusCode {
