@@ -6,14 +6,14 @@
 
 ### 快速上手
 
-下载 Releases 中的文件直接运行即可，默认监听 10003 端口，使用 SQLite 存储内容
+下载 Releases 中的文件直接运行即可，默认监听 8080 端口，默认数据位于程序同目录
 
-命令行可以接收的参数
+支持环境变量如下
 
-| 参数 | 默认值 | 描述 |
-|-|-|-|
-| -P / --port | 10003 | 端口号 |
-| -D / --db-dir | 程序同目录 | 数据目录 |
+| 参数 | 描述 |
+|-|-|
+| PORT | 端口号 |
+| DATA_DIR | 数据目录 |
 
 配合 systemd 使用的 webnote.service
 
@@ -21,7 +21,8 @@
 [Unit]
 Description=webnote service
 [Service]
-ExecStart=/usr/local/webnote/webnote -D /usr/local/webnote -P 10003
+Environment=PORT=10003 DATA_DIR=/usr/local/webnote
+ExecStart=/usr/local/webnote/webnote
 Restart=on-failure
 [Install]
 WantedBy=multi-user.target
@@ -29,38 +30,33 @@ WantedBy=multi-user.target
 
 ### 构建说明
 
-1. 检查
-
 ```sh
+cd node && npm install && npm run build && cd ..
+
 cargo check
 cargo test
 cargo fmt --all -- --check
 cargo clippy -- -D warnings
-```
 
-2. 构建
-
-```sh
-cd node && npm install && npm run build
-cd .. && cargo build --verbose --release
+cargo build --verbose --release
 ```
 
 ### API
 
 | 路径 | 方法 | 描述 |
 |-|-|-|
-| /{uid} | POST | 发送表单数据：t = 文本内容 |
-| /{uid} | GET | 获取文本内容 |
+| /{id} | POST | 发送表单数据：t = 文本内容 |
+| /{id} | GET | 获取文本内容 |
 
 示例
 
 ```sh
-# /{uid} post
+# /{id} post
 curl -d t="text" 127.0.0.1:10003/p
 curl -d "text" 127.0.0.1:10003/p
 cat /etc/hosts | curl 127.0.0.1:10003/p -v --data-binary @-
 
-# /{uid} get
+# /{id} get
 curl 127.0.0.1:10003/p
 ```
 
