@@ -31,7 +31,7 @@ struct Assets;
 
 #[tokio::main]
 async fn main() {
-    println!("Version {}", env!("CARGO_PKG_VERSION"));
+    println!("v{}", env!("CARGO_PKG_VERSION"));
 
     tracing_subscriber::fmt().with_target(false).init();
 
@@ -49,7 +49,7 @@ async fn main() {
         .route("/{id}", get(path_get).post(path_post))
         .route("/", get(root_get).post(root_post))
         .route("/assets/{file}", get(assets))
-        .with_state(pool)
+        .with_state(pool.clone())
         .layer(ServiceBuilder::new().layer(DefaultBodyLimit::max(5 << 20)));
 
     println!("Server running on {addr}");
@@ -57,8 +57,35 @@ async fn main() {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
+    .with_graceful_shutdown(shutdown_signal())
     .await
     .unwrap();
+
+    pool.close().await;
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to handle Ctrl+C");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to handle signal")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 async fn init_database() -> Result<SqlitePool, Error> {
