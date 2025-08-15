@@ -7,7 +7,6 @@ use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect};
 use axum::routing::get;
-use rust_embed::RustEmbed;
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::{Error, FromRow, Row, SqlitePool};
@@ -18,6 +17,8 @@ use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::{error, info};
 
+include!(concat!(env!("OUT_DIR"), "/rust_embed_assets.rs"));
+
 #[derive(FromRow, Template)]
 #[template(path = "index.html")]
 struct Note {
@@ -25,9 +26,11 @@ struct Note {
     content: String,
 }
 
-#[derive(RustEmbed)]
-#[folder = "templates/assets/"]
-struct Assets;
+#[cfg(debug_assertions)]
+type Assets = DebugAssets;
+
+#[cfg(not(debug_assertions))]
+type Assets = ReleaseAssets;
 
 #[tokio::main]
 async fn main() {

@@ -3,6 +3,5 @@ webnote.db3*
 node/node_modules
 node/package-lock.json
 node/dist
-templates/assets
 note.db*
 .idea

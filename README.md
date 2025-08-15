@@ -31,8 +31,6 @@ WantedBy=multi-user.target
 ### 构建说明
 
 ```sh
-cd node && npm install && npm run build && cd ..
-
 cargo check
 cargo test
 cargo fmt --all -- --check

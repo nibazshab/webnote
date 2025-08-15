@@ -20,8 +20,6 @@ jobs:
           toolchain: stable
           override: true
 
-      - run: cd node && npm install && npm run build
-
       - run: cargo build --verbose --release
 
       - run: |
