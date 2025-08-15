@@ -57,7 +57,7 @@
         re.append(re_a, re_b, re_r);
         document.body.appendChild(re);
 
-        return {re, re_a, re_b};
+        return {re, re_a};
     };
 
     let widget = null;
