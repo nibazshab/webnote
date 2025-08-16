@@ -7,7 +7,6 @@
     let con_a = con.value;
     const send = () => {
         const con_b = con.value;
-
         if (con_b === con_a) return;
 
         fetch(window.location.href, {
@@ -81,5 +80,4 @@
             widget?.re.classList.remove('visible');
         }
     });
-
 })();

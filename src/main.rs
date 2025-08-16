@@ -1,4 +1,7 @@
+mod db;
+mod ext;
 mod utils;
+mod var;
 
 use askama::Template;
 use axum::Router;
@@ -8,34 +11,20 @@ use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect};
 use axum::routing::get;
 use serde::Deserialize;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
-use sqlx::{Error, FromRow, Row, SqlitePool};
+use sqlx::SqlitePool;
+use std::env;
 use std::net::SocketAddr;
-use std::str::FromStr;
-use std::{env, path};
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::{error, info};
 
-include!(concat!(env!("OUT_DIR"), "/rust_embed_assets.rs"));
-
-#[derive(FromRow, Template)]
-#[template(path = "index.html")]
-struct Note {
-    id: String,
-    content: String,
-}
-
-#[cfg(debug_assertions)]
-type Assets = DebugAssets;
-
-#[cfg(not(debug_assertions))]
-type Assets = ReleaseAssets;
+use crate::db::init_database;
+use crate::ext::{assets, shutdown_signal};
+use crate::var::Note;
 
 #[tokio::main]
 async fn main() {
     println!("v{}", env!("CARGO_PKG_VERSION"));
-
     tracing_subscriber::fmt().with_target(false).init();
 
     let pool = init_database().await.unwrap();
@@ -44,7 +33,6 @@ async fn main() {
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8080);
-
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = TcpListener::bind(addr).await.unwrap();
 
@@ -65,54 +53,6 @@ async fn main() {
     .unwrap();
 
     pool.close().await;
-}
-
-async fn shutdown_signal() {
-    let ctrl_c = async {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("failed to handle Ctrl+C");
-    };
-
-    #[cfg(unix)]
-    let terminate = async {
-        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .expect("failed to handle signal")
-            .recv()
-            .await;
-    };
-
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
-    }
-}
-
-async fn init_database() -> Result<SqlitePool, Error> {
-    let dir = env::var("DATA_DIR").ok().unwrap_or_else(|| {
-        let mut path = env::current_exe().unwrap();
-        path.pop();
-        path.display().to_string()
-    });
-
-    let db_url = path::Path::new(format!("sqlite:{dir}").as_str())
-        .join("note.db")
-        .display()
-        .to_string();
-
-    let options = SqliteConnectOptions::from_str(&db_url)?
-        .journal_mode(SqliteJournalMode::Wal)
-        .synchronous(SqliteSynchronous::Normal)
-        .create_if_missing(true);
-
-    println!("Connecting to {db_url}");
-    let pool = SqlitePool::connect_with(options).await?;
-
-    create_table(&pool).await?;
-    Ok(pool)
 }
 
 async fn path_get(
@@ -220,74 +160,4 @@ async fn root_get() -> Redirect {
 
 async fn root_post() -> StatusCode {
     StatusCode::BAD_REQUEST
-}
-
-impl Note {
-    async fn upsert(&self, pool: &SqlitePool) -> Result<(), Error> {
-        let key = utils::hash(&self.id);
-
-        sqlx::query(
-            "
-INSERT INTO notes (key, id, content) VALUES (?1, ?2, ?3)
-ON CONFLICT(key) DO UPDATE SET
-    content = excluded.content
-",
-        )
-        .bind(key)
-        .bind(&self.id)
-        .bind(&self.content)
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-
-    async fn select(&mut self, pool: &SqlitePool) -> Result<(), Error> {
-        let key = utils::hash(&self.id);
-
-        if let Some(rs) = sqlx::query("SELECT content FROM notes WHERE key = ?")
-            .bind(key)
-            .fetch_optional(pool)
-            .await?
-        {
-            self.content = rs.get("content")
-        }
-
-        Ok(())
-    }
-}
-
-async fn create_table(pool: &SqlitePool) -> Result<(), Error> {
-    sqlx::query(
-        "
-CREATE TABLE IF NOT EXISTS notes (
-    key INTEGER PRIMARY KEY,
-    id TEXT NOT NULL,
-    content TEXT NOT NULL
-)",
-    )
-    .execute(pool)
-    .await?;
-
-    Ok(())
-}
-
-async fn assets(Path(file): Path<String>) -> impl IntoResponse {
-    match Assets::get(&file) {
-        Some(obj) => {
-            let mime = mime_guess::from_path(&file).first_or_octet_stream();
-            (
-                [
-                    (header::CONTENT_TYPE, mime.as_ref()),
-                    (
-                        header::CACHE_CONTROL,
-                        format!("public, max-age={}", 60 * 60 * 24 * 7).as_str(),
-                    ),
-                ],
-                obj.data,
-            )
-                .into_response()
-        }
-        None => StatusCode::NOT_FOUND.into_response(),
-    }
 }
