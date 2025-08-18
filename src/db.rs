@@ -7,7 +7,7 @@ use crate::utils;
 use crate::var::Note;
 
 impl Note {
-    pub async fn upsert(&self, pool: &SqlitePool) -> Result<(), Error> {
+    pub async fn write(&self, pool: &SqlitePool) -> Result<(), Error> {
         let key = utils::hash(&self.id);
 
         sqlx::query(
@@ -26,7 +26,7 @@ ON CONFLICT(key) DO UPDATE SET
         Ok(())
     }
 
-    pub async fn select(&mut self, pool: &SqlitePool) -> Result<(), Error> {
+    pub async fn read(&mut self, pool: &SqlitePool) -> Result<(), Error> {
         let key = utils::hash(&self.id);
 
         if let Some(rs) = sqlx::query("SELECT content FROM notes WHERE key = ?")

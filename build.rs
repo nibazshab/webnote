@@ -3,21 +3,49 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use lightningcss::stylesheet::{MinifyOptions, ParserOptions, StyleSheet};
+use minify_js::TopLevelMode;
+
 fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }
 
-    // todo: copy -> compression
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
-        let target = dst.join(entry.file_name());
+        let source_path = entry.path();
+        let target_path = dst.join(entry.file_name());
 
         if ty.is_dir() {
-            compression(&entry.path(), &target)?;
+            compression(&source_path, &target_path)?;
         } else {
-            fs::copy(entry.path(), &target)?;
+            match source_path.extension().and_then(|s| s.to_str()) {
+                Some("js") => {
+                    let js_code = fs::read(&source_path)?;
+                    let session = minify_js::Session::new();
+                    let mut minified_js = Vec::new();
+                    minify_js::minify(
+                        &session,
+                        TopLevelMode::Module,
+                        js_code.as_slice(),
+                        &mut minified_js,
+                    )
+                    .unwrap();
+                    fs::write(&target_path, &minified_js)?;
+                }
+                Some("css") => {
+                    let css_code = fs::read_to_string(&source_path)?;
+                    let mut stylesheet =
+                        StyleSheet::parse(&css_code, ParserOptions::default()).unwrap();
+                    stylesheet.minify(MinifyOptions::default()).unwrap();
+                    let compressed_css = stylesheet.to_css(Default::default()).unwrap();
+                    fs::write(&target_path, compressed_css.code.as_bytes())?;
+                }
+                _ => {
+                    fs::copy(&source_path, &target_path)?;
+                }
+            }
         }
     }
     Ok(())

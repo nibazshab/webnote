@@ -70,7 +70,7 @@ async fn path_get(
         content: "".to_string(),
     };
 
-    if let Err(e) = note.select(&pool).await {
+    if let Err(e) = note.read(&pool).await {
         error!("{} - {} - {}", id, e, addr);
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
@@ -142,7 +142,7 @@ async fn path_post(
         content: t.t,
     };
 
-    match note.upsert(&pool).await {
+    match note.write(&pool).await {
         Ok(_) => {
             info!("[post] {} - {} - {}", id, addr, ua);
             StatusCode::OK.into_response()

@@ -18,6 +18,10 @@ rust-embed = "8.7.2"
 askama = "0.14.0"
 mime_guess = "2.0.5"
 
+[build-dependencies]
+lightningcss = "1.0.0-alpha.67"
+minify-js = "0.6.0"
+
 [profile.release]
 opt-level = "s"
 lto = "fat"
