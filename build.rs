@@ -3,8 +3,8 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use lightningcss::stylesheet::{MinifyOptions, ParserOptions, StyleSheet};
-use minify_js::{minify, Session, TopLevelMode};
+use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
+use minify_js::{Session, TopLevelMode, minify};
 
 fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
     if !dst.exists() {
@@ -37,7 +37,7 @@ fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
 
                 let mut s = StyleSheet::parse(&con, ParserOptions::default()).unwrap();
                 s.minify(MinifyOptions::default()).unwrap();
-                let obj = s.to_css(Default::default()).unwrap().code;
+                let obj = s.to_css(PrinterOptions::default()).unwrap().code;
 
                 fs::write(&dst, &obj)?;
             }
