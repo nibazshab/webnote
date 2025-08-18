@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use lightningcss::stylesheet::{MinifyOptions, ParserOptions, StyleSheet};
-use minify_js::TopLevelMode;
+use minify_js::{minify, Session, TopLevelMode};
 
 fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
     if !dst.exists() {
@@ -13,41 +13,40 @@ fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
 
     for entry in fs::read_dir(src)? {
         let entry = entry?;
-        let ty = entry.file_type()?;
-        let source_path = entry.path();
-        let target_path = dst.join(entry.file_name());
 
-        if ty.is_dir() {
-            compression(&source_path, &target_path)?;
-        } else {
-            match source_path.extension().and_then(|s| s.to_str()) {
-                Some("js") => {
-                    let js_code = fs::read(&source_path)?;
-                    let session = minify_js::Session::new();
-                    let mut minified_js = Vec::new();
-                    minify_js::minify(
-                        &session,
-                        TopLevelMode::Module,
-                        js_code.as_slice(),
-                        &mut minified_js,
-                    )
-                    .unwrap();
-                    fs::write(&target_path, &minified_js)?;
-                }
-                Some("css") => {
-                    let css_code = fs::read_to_string(&source_path)?;
-                    let mut stylesheet =
-                        StyleSheet::parse(&css_code, ParserOptions::default()).unwrap();
-                    stylesheet.minify(MinifyOptions::default()).unwrap();
-                    let compressed_css = stylesheet.to_css(Default::default()).unwrap();
-                    fs::write(&target_path, compressed_css.code.as_bytes())?;
-                }
-                _ => {
-                    fs::copy(&source_path, &target_path)?;
-                }
+        let src = entry.path();
+        let dst = dst.join(entry.file_name());
+
+        if entry.file_type()?.is_dir() {
+            compression(&src, &dst)?;
+            continue;
+        }
+
+        match src.extension().and_then(|s| s.to_str()) {
+            Some("js") => {
+                let con = fs::read(&src)?;
+
+                let s = Session::new();
+                let mut obj = Vec::new();
+                minify(&s, TopLevelMode::Module, con.as_slice(), &mut obj).unwrap();
+
+                fs::write(&dst, &obj)?;
+            }
+            Some("css") => {
+                let con = fs::read_to_string(&src)?;
+
+                let mut s = StyleSheet::parse(&con, ParserOptions::default()).unwrap();
+                s.minify(MinifyOptions::default()).unwrap();
+                let obj = s.to_css(Default::default()).unwrap().code;
+
+                fs::write(&dst, &obj)?;
+            }
+            _ => {
+                fs::copy(&src, &dst)?;
             }
         }
     }
+
     Ok(())
 }
 
@@ -56,13 +55,12 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let profile = env::var("PROFILE").unwrap();
 
-    let obj = if profile == "release" {
-        let source_dir = PathBuf::from("templates/assets");
-        let target_dir = PathBuf::from(&out_dir).join("assets");
+    let obj = if env::var("PROFILE").unwrap() == "release" {
+        let src = PathBuf::from("templates/assets");
+        let dst = PathBuf::from(&out_dir).join("assets");
 
-        compression(&source_dir, &target_dir).unwrap();
+        compression(&src, &dst).unwrap();
 
         format!(
             r#"
