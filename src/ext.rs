@@ -5,6 +5,10 @@ use tokio::signal;
 
 use crate::var::Assets;
 
+pub async fn favicon() -> impl IntoResponse {
+    ([(header::CONTENT_TYPE, "image/x-icon")], vec![]).into_response()
+}
+
 pub async fn assets(Path(file): Path<String>) -> impl IntoResponse {
     match Assets::get(&file) {
         Some(obj) => {
