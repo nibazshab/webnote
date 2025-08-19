@@ -68,7 +68,7 @@ async fn path_get(
     }
 
     let mut note = Note {
-        id: id.clone(),
+        id,
         content: "".to_string(),
     };
 
@@ -231,7 +231,7 @@ async fn path_raw_get(Path(id): Path<String>, State(pool): State<SqlitePool>) ->
     }
 
     let mut note = Note {
-        id: id.clone(),
+        id,
         content: "".to_string(),
     };
 
