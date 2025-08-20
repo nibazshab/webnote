@@ -47,11 +47,9 @@ async fn main() {
         .route("/favicon.ico", get(favicon))
         .merge(
             #[cfg(feature = "file")]
-            {
-                Router::new()
-                    .route("/b/", get(features::file::file_index))
-                    .route("/b/{file}", get(features::file::file_assets))
-            },
+            Router::new()
+                .route("/b/", get(features::file::file_index))
+                .route("/b/{file}", get(features::file::file_assets)),
             #[cfg(not(feature = "file"))]
             Router::new(),
         )
