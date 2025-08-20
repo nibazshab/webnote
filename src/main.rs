@@ -17,6 +17,7 @@ use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
+use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 use crate::db::init_database;
@@ -44,7 +45,11 @@ async fn main() {
         .route("/assets/{file}", get(assets))
         .route("/favicon.ico", get(favicon))
         .with_state(pool.clone())
-        .layer(ServiceBuilder::new().layer(DefaultBodyLimit::max(5 << 20)));
+        .layer(
+            ServiceBuilder::new()
+                .layer(DefaultBodyLimit::max(5 << 20))
+                .layer(CorsLayer::permissive()),
+        );
 
     println!("Server running on {addr}");
     axum::serve(
