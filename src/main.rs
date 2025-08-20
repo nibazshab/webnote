@@ -1,5 +1,6 @@
 mod db;
 mod ext;
+mod features;
 mod utils;
 mod var;
 
@@ -44,6 +45,16 @@ async fn main() {
         .route("/", get(root_get).post(root_post))
         .route("/assets/{file}", get(assets))
         .route("/favicon.ico", get(favicon))
+        .merge(
+            #[cfg(feature = "file")]
+            {
+                Router::new()
+                    .route("/b/", get(features::file::file_index))
+                    .route("/b/{file}", get(features::file::file_assets))
+            },
+            #[cfg(not(feature = "file"))]
+            Router::new(),
+        )
         .with_state(pool.clone())
         .layer(
             ServiceBuilder::new()
