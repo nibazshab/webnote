@@ -23,10 +23,6 @@ mime_guess = "2.0.5"
 base64 = "0.22.1"
 tower-http = { version = "0.6.6", features = ["cors"] }
 
-[build-dependencies]
-lightningcss = "1.0.0-alpha.67"
-minify-js = "0.6.0"
-
 [profile.release]
 opt-level = "z"
 lto = "fat"

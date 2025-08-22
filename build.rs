@@ -3,9 +3,6 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
-use minify_js::{Session, TopLevelMode, minify};
-
 fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
@@ -24,22 +21,7 @@ fn compression(src: &Path, dst: &Path) -> std::io::Result<()> {
 
         match src.extension().and_then(|s| s.to_str()) {
             Some("js") => {
-                let con = fs::read(&src)?;
-
-                let s = Session::new();
-                let mut obj = Vec::new();
-                minify(&s, TopLevelMode::Module, con.as_slice(), &mut obj).unwrap();
-
-                fs::write(&dst, &obj)?;
-            }
-            Some("css") => {
-                let con = fs::read_to_string(&src)?;
-
-                let mut s = StyleSheet::parse(&con, ParserOptions::default()).unwrap();
-                s.minify(MinifyOptions::default()).unwrap();
-                let obj = s.to_css(PrinterOptions::default()).unwrap().code;
-
-                fs::write(&dst, &obj)?;
+                fs::copy(&src, &dst)?;
             }
             _ => {
                 fs::copy(&src, &dst)?;
@@ -65,7 +47,7 @@ fn main() {
         format!(
             r#"
             #[derive(rust_embed::RustEmbed)]
-            #[folder = "{}/assets"]
+            #[folder = "{}/assets/"]
             pub struct ReleaseAssets;
             "#,
             out_dir.replace('\\', "/")
@@ -80,5 +62,39 @@ fn main() {
     };
 
     let mut f = File::create(Path::new(&out_dir).join("rust_embed_assets.rs")).unwrap();
+    writeln!(f, "{obj}").unwrap();
+
+    feature_file();
+}
+
+fn feature_file() {
+    println!("cargo:rerun-if-changed=templates/features/file/");
+
+    let out_dir = env::var("OUT_DIR").unwrap();
+
+    let obj = if env::var("PROFILE").unwrap() == "release" {
+        let src = PathBuf::from("templates/features/file");
+        let dst = PathBuf::from(&out_dir).join("features/file");
+
+        compression(&src, &dst).unwrap();
+
+        format!(
+            r#"
+            #[derive(rust_embed::RustEmbed)]
+            #[folder = "{}/features/file/"]
+            pub struct ReleaseFileAssets;
+            "#,
+            out_dir.replace('\\', "/")
+        )
+    } else {
+        r#"
+            #[derive(rust_embed::RustEmbed)]
+            #[folder = "templates/features/file/"]
+            pub struct DebugFileAssets;
+            "#
+        .to_string()
+    };
+
+    let mut f = File::create(Path::new(&out_dir).join("rust_embed_features_file.rs")).unwrap();
     writeln!(f, "{obj}").unwrap();
 }

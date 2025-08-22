@@ -4,9 +4,13 @@ use axum::response::IntoResponse;
 
 use crate::ext::assets_response;
 
-#[derive(rust_embed::RustEmbed)]
-#[folder = "templates/features/file/"]
-struct FileAssets;
+include!(concat!(env!("OUT_DIR"), "/rust_embed_features_file.rs"));
+
+#[cfg(debug_assertions)]
+pub type FileAssets = DebugFileAssets;
+
+#[cfg(not(debug_assertions))]
+pub type FileAssets = ReleaseFileAssets;
 
 pub async fn file_index() -> impl IntoResponse {
     let file = Path("index.html".to_string());
