@@ -3,8 +3,8 @@ use sqlx::{Error, Row, SqlitePool};
 use std::str::FromStr;
 use std::{env, path};
 
-use crate::utils;
 use crate::var::Note;
+use crate::{features, utils};
 
 impl Note {
     pub async fn write(&self, pool: &SqlitePool) -> Result<(), Error> {
@@ -66,16 +66,23 @@ pub async fn init_database() -> Result<SqlitePool, Error> {
 }
 
 async fn create_table(pool: &SqlitePool) -> Result<(), Error> {
-    sqlx::query(
+    let mut sql = String::from(
         "
 CREATE TABLE IF NOT EXISTS notes (
     key INTEGER PRIMARY KEY,
     id TEXT NOT NULL,
     content TEXT NOT NULL
-)",
-    )
-    .execute(pool)
-    .await?;
+);",
+    );
+
+    sql.push_str(
+        #[cfg(feature = "file")]
+        features::file::CREATE_TABLE_FILE,
+        #[cfg(not(feature = "file"))]
+        "",
+    );
+
+    sqlx::query(sql.as_str()).execute(pool).await?;
 
     Ok(())
 }

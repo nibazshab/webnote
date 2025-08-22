@@ -23,3 +23,12 @@ pub async fn file_assets(Path(file): Path<String>) -> impl IntoResponse {
         None => StatusCode::NOT_FOUND.into_response(),
     }
 }
+
+pub const CREATE_TABLE_FILE: &str = "
+CREATE TABLE IF NOT EXISTS files (
+    key INTEGER PRIMARY KEY,
+    id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    date DATE NOT NULL,
+    token TEXT NOT NULL
+);";
