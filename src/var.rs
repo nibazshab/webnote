@@ -1,9 +1,8 @@
 use askama::Template;
-use sqlx::FromRow;
 
 include!(concat!(env!("OUT_DIR"), "/rust_embed_assets.rs"));
 
-#[derive(FromRow, Template)]
+#[derive(Template)]
 #[template(path = "index.html")]
 pub struct Note {
     pub id: String,
