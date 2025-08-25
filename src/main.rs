@@ -23,7 +23,7 @@ use tracing::{error, info};
 
 use crate::db::init_database;
 use crate::ext::{assets, favicon, shutdown_signal};
-use crate::var::Note;
+use crate::var::{Note, port};
 
 #[tokio::main]
 async fn main() {
@@ -32,10 +32,10 @@ async fn main() {
 
     let pool = init_database().await.unwrap();
 
-    let port: u16 = env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(8080);
+    #[cfg(feature = "file")]
+    features::file::init_attachment().unwrap();
+
+    let port = port();
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = TcpListener::bind(addr).await.unwrap();
 
@@ -48,8 +48,14 @@ async fn main() {
         .merge(
             #[cfg(feature = "file")]
             Router::new()
-                .route("/b/", get(features::file::file_index))
-                .route("/b/{file}", get(features::file::file_assets)),
+                .route(
+                    "/b/",
+                    get(features::file::file_index).post(features::file::file_upload),
+                )
+                .route(
+                    "/b/{id}",
+                    get(features::file::file_download).delete(features::file::file_remove),
+                ),
             #[cfg(not(feature = "file"))]
             Router::new(),
         )
@@ -179,10 +185,9 @@ async fn root_post(
     headers: header::HeaderMap,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let obj = if let Ok(Some(obj)) = multipart.next_field().await {
-        obj
-    } else {
-        return (StatusCode::BAD_REQUEST, "Invalid, expecting a file.").into_response();
+    let obj = match multipart.next_field().await {
+        Ok(Some(obj)) => obj,
+        _ => return (StatusCode::BAD_REQUEST, "Invalid, expecting a file.").into_response(),
     };
 
     if !obj
@@ -194,10 +199,12 @@ async fn root_post(
         return (StatusCode::BAD_REQUEST, "Invalid, expecting text file.").into_response();
     }
 
-    let bytes = if let Ok(bytes) = obj.bytes().await {
-        bytes
-    } else {
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    let bytes = match obj.bytes().await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            error!("{e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
     };
 
     let ua = headers

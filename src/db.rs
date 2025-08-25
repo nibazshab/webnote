@@ -1,9 +1,9 @@
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use sqlx::{Error, Row, SqlitePool};
+use std::path;
 use std::str::FromStr;
-use std::{env, path};
 
-use crate::var::Note;
+use crate::var::{Note, data_dir};
 use crate::{features, utils};
 
 impl Note {
@@ -42,12 +42,7 @@ ON CONFLICT(key) DO UPDATE SET
 }
 
 pub async fn init_database() -> Result<SqlitePool, Error> {
-    let dir = env::var("DATA_DIR").ok().unwrap_or_else(|| {
-        let mut path = env::current_exe().unwrap();
-        path.pop();
-        path.display().to_string()
-    });
-
+    let dir = data_dir();
     let db_url = path::Path::new(format!("sqlite:{dir}").as_str())
         .join("note.db")
         .display()
