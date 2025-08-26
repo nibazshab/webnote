@@ -127,7 +127,7 @@ pub async fn file_upload(
     info!("[post] {id} - {addr} - {ua}");
     Json(json!({
         "link": format!("{host}/b/{id}"),
-        "time": file.time,
+        "token": file.time,
     }))
     .into_response()
 }
