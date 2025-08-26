@@ -146,7 +146,7 @@ pub async fn file_upload(
 
     let id = file.id;
 
-    info!("[post] {id} - {addr} - {ua}");
+    info!("[feature/file] {id} - {addr} - {ua}");
     Json(json!({
         "link": format!("{host}/b/{id}"),
         "token": file.time,

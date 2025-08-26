@@ -165,7 +165,7 @@ async fn path_post(
 
     match note.write(&pool).await {
         Ok(_) => {
-            info!("[post] {id} - {addr} - {ua}");
+            info!("[note] {id} - {addr} - {ua}");
             StatusCode::OK.into_response()
         }
         Err(e) => {
@@ -236,7 +236,7 @@ async fn root_post(
 
     match note.write(&pool).await {
         Ok(_) => {
-            info!("[post] {id} - {addr} - {ua}");
+            info!("[note] {id} - {addr} - {ua}");
             (StatusCode::OK, format!("{host}/-/{id}")).into_response()
         }
         Err(e) => {
