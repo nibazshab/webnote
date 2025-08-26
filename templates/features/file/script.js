@@ -29,7 +29,7 @@ b_a.addEventListener("click", function () {
     if (!file) return;
 
     if (file.size > 5242880) {
-        yy.value = "文件太大，必须小于 " + 5242880 + "b";
+        yy.textContent = "文件太大，必须小于 5mb";
         return;
     }
 

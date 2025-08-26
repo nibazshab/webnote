@@ -33,6 +33,28 @@ struct File {
     time: String,
 }
 
+enum FileColumn {
+    Name,
+    Time,
+}
+
+impl FileColumn {
+    fn as_str(&self) -> &'static str {
+        match self {
+            FileColumn::Name => "name",
+            FileColumn::Time => "time",
+        }
+    }
+}
+
+pub const CREATE_TABLE_FILE: &str = "
+CREATE TABLE IF NOT EXISTS files (
+    key INTEGER PRIMARY KEY,
+    id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    time TEXT NOT NULL
+);";
+
 static ATTACHMENT_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| path::Path::new(&data_dir()).join("attachment"));
 
@@ -47,7 +69,7 @@ pub async fn file_remove(
     };
 
     let key = utils::hash(&id);
-    let time = match File::read::<String>("time", key, &pool).await {
+    let time = match File::read::<String>(FileColumn::Time, key, &pool).await {
         Ok(time) => time,
         Err(_) => {
             return StatusCode::NOT_FOUND.into_response();
@@ -137,8 +159,7 @@ pub async fn file_download(
     State(pool): State<SqlitePool>,
 ) -> impl IntoResponse {
     match id.as_str() {
-        "script.js" => response_assets(id),
-        "style.css" => response_assets(id),
+        "script.js" | "style.css" => response_assets(id),
         _ => response_files(id, &pool).await,
     }
 }
@@ -146,7 +167,7 @@ pub async fn file_download(
 async fn response_files(id: String, pool: &SqlitePool) -> Response {
     let key = utils::hash(&id);
 
-    let name = match File::read::<String>("name", key, pool).await {
+    let name = match File::read::<String>(FileColumn::Name, key, pool).await {
         Ok(name) => name,
         Err(_) => {
             return StatusCode::NOT_FOUND.into_response();
@@ -200,14 +221,6 @@ pub fn init_attachment() -> std::io::Result<()> {
     Ok(())
 }
 
-pub const CREATE_TABLE_FILE: &str = "
-CREATE TABLE IF NOT EXISTS files (
-    key INTEGER PRIMARY KEY,
-    id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    time TEXT NOT NULL
-);";
-
 impl File {
     async fn write(name: String, pool: &SqlitePool) -> Result<Self, Error> {
         let mut i = 0;
@@ -242,11 +255,11 @@ impl File {
         }
     }
 
-    async fn read<T>(column: &str, key: i64, pool: &SqlitePool) -> Result<T, Error>
+    async fn read<T>(column: FileColumn, key: i64, pool: &SqlitePool) -> Result<T, Error>
     where
         T: for<'r> Decode<'r, Sqlite> + Type<Sqlite> + Send + Unpin,
     {
-        let query_str = format!("SELECT {} FROM files WHERE key = ?", column);
+        let query_str = format!("SELECT {} FROM files WHERE key = ?", column.as_str());
 
         let rs = sqlx::query(&query_str).bind(key).fetch_one(pool).await?;
 
