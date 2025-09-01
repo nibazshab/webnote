@@ -1,10 +1,9 @@
-name: Releases
+name: build
 
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,11 +19,11 @@ jobs:
           toolchain: stable
           override: true
 
-      - run: cargo build --verbose --release
+      - run: cargo build --verbose --release 
 
       - run: |
           mkdir dist
-          tar -czvf dist/webnote-linux-amd64.tar.gz -C target/release webnote
+          tar czf dist/webnote-linux-amd64.tar.gz -C target/release webnote
 
       - uses: softprops/action-gh-release@v2
         if: ${{ github.event_name != 'workflow_dispatch' }}
