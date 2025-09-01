@@ -1,21 +1,10 @@
-# Web Notepad
+# README
 
-这是一个简单的网页记事本，用于临时记录一些内容
+不想写 README 了 : (
 
-> v1 版本已迁移至 go 分支
+### 启动
 
-### 快速上手
-
-下载 Releases 中的文件直接运行即可，默认监听 8080 端口，默认数据位于程序同目录
-
-支持环境变量如下
-
-| 参数 | 描述 |
-|-|-|
-| PORT | 端口号 |
-| DATA_DIR | 数据目录 |
-
-配合 systemd 使用的 webnote.service
+systemd service
 
 ```ini
 [Unit]
@@ -28,38 +17,48 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-### 构建说明
+### 手动编译
+
+检查
 
 ```sh
 cargo check
 cargo test
 cargo fmt --all -- --check
 cargo clippy -- -D warnings
+```
 
+构建
+
+```sh
 cargo build --verbose --release
 ```
 
 ### API
 
-| 路径 | 方法 | 描述 |
-|-|-|-|
-| /{id} | POST | 发送表单数据：t = 文本内容 |
-| /{id} | GET | 获取文本内容 |
-
-示例
+- `/{id}` GET/POST
+- `/` GET/POST
+- `/-/{id}` GET
 
 ```sh
-# /{id} post
-curl -d t="text" 127.0.0.1:10003/p
-curl -d "text" 127.0.0.1:10003/p
-cat /etc/hosts | curl 127.0.0.1:10003/p -v --data-binary @-
-
-# /{id} get
-curl 127.0.0.1:10003/p
+# POST
+curl -d t="text" 127.0.0.1:8080/test
+curl -d "text" 127.0.0.1:8080
+cat /etc/hosts | curl --data-binary @- 127.0.0.1:8080/test
+cat /etc/hosts | curl -F f=@- 127.0.0.1:8080
 ```
 
-## 许可证
+- `/b/` GET/POST
+- `/b/{id}` GET/DELETE
 
-Powered by https://github.com/pereorga/minimalist-web-notepad
+```sh
+# POST
+curl -F f=@a.jpg 127.0.0.1:8080/b/
+# DELETE
+curl -X DELETE 127.0.0.1:8080/b/test -H 'token: 2A9B3F692B1715A6'
+```
 
-MIT © ZShab Niba
+### END
+
+- https://github.com/nibazshab/pastebin
+- https://github.com/nibazshab/webnote/tree/go
