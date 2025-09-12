@@ -1,3 +1,4 @@
+mod cfg;
 mod db;
 mod ext;
 mod features;
@@ -7,11 +8,11 @@ mod var;
 use askama::Template;
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{ConnectInfo, DefaultBodyLimit, Multipart, Path, State};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, State};
 use axum::http::{StatusCode, header};
-use axum::response::{Html, IntoResponse, Redirect};
+use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::get;
-use base64::{Engine, engine::general_purpose};
+use axum_extra::TypedHeader;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::env;
@@ -21,59 +22,47 @@ use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
-use crate::db::init_database;
-use crate::ext::{assets, favicon, shutdown_signal};
-use crate::var::{Note, port};
+use crate::cfg::port;
+use crate::db::{init_schemas, pool};
+use crate::ext::{ext_router, shutdown_signal};
+use crate::var::Note;
+
+fn router() -> Router<SqlitePool> {
+    Router::new()
+        .route("/{id}", get(path_get).post(path_post))
+        .route("/-/{id}", get(path_raw_get))
+        .route("/", get(root_get).post(root_post))
+}
 
 #[tokio::main]
 async fn main() {
     println!("v{}", env!("CARGO_PKG_VERSION"));
     tracing_subscriber::fmt().with_target(false).init();
 
-    let pool = init_database().await.unwrap();
+    features::inits().expect("failed to init features");
 
-    #[cfg(feature = "file")]
-    features::file::init_attachment().unwrap();
+    let pool = pool().await.expect("failed to get database pool");
+    init_schemas(&pool).await.expect("failed to init schemas");
 
-    let port = port();
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let listener = TcpListener::bind(addr).await.unwrap();
-
-    let app = Router::new()
-        .route("/{id}", get(path_get).post(path_post))
-        .route("/-/{id}", get(path_raw_get))
-        .route("/", get(root_get).post(root_post))
-        .route("/assets/{file}", get(assets))
-        .route("/favicon.ico", get(favicon))
-        .merge(
-            #[cfg(feature = "file")]
-            Router::new()
-                .route(
-                    "/b/",
-                    get(features::file::file_index).post(features::file::file_upload),
-                )
-                .route(
-                    "/b/{id}",
-                    get(features::file::file_download).delete(features::file::file_remove),
-                ),
-            #[cfg(not(feature = "file"))]
-            Router::new(),
-        )
-        .with_state(pool.clone())
-        .layer(
-            ServiceBuilder::new()
-                .layer(DefaultBodyLimit::max(5 << 20))
-                .layer(CorsLayer::permissive()),
-        );
-
+    let addr = SocketAddr::from(([0, 0, 0, 0], port()));
     println!("Server running on {addr}");
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .unwrap();
+
+    let middleware = ServiceBuilder::new()
+        .layer(DefaultBodyLimit::max(5 << 20))
+        .layer(CorsLayer::permissive());
+
+    let listener = TcpListener::bind(addr).await.expect("failed to bind addr");
+    let router = router()
+        .merge(ext_router())
+        .merge(features::routers())
+        .with_state(pool.clone())
+        .layer(middleware)
+        .into_make_service_with_connect_info::<SocketAddr>();
+
+    axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("failed to run server");
 
     pool.close().await;
 }
@@ -81,29 +70,15 @@ async fn main() {
 async fn path_get(
     Path(id): Path<String>,
     State(pool): State<SqlitePool>,
-    headers: header::HeaderMap,
+    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
 ) -> impl IntoResponse {
-    if id.len() > 64 {
-        return Redirect::temporary(&utils::rand_string(4)).into_response();
-    }
-
-    let mut note = Note {
-        id,
-        content: "".to_string(),
+    let note = match select(id, &pool).await {
+        Ok(note) => note,
+        Err(e) => return e,
     };
-
-    if let Err(e) = note.read(&pool).await {
-        error!("{e}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    };
-
-    let ua = headers
-        .get(header::USER_AGENT)
-        .and_then(|ua| ua.to_str().ok())
-        .unwrap_or_default();
 
     const CLI: [&str; 2] = ["curl", "wget"];
-    let is_cli = CLI.iter().any(|agent| ua.contains(agent));
+    let is_cli = CLI.iter().any(|agent| user_agent.as_str().contains(agent));
 
     if is_cli {
         (
@@ -112,16 +87,45 @@ async fn path_get(
         )
             .into_response()
     } else {
-        let html = note.render().unwrap();
+        let html = note.render().unwrap_or_default();
         Html(html).into_response()
     }
+}
+
+async fn path_raw_get(Path(id): Path<String>, State(pool): State<SqlitePool>) -> impl IntoResponse {
+    match select(id, &pool).await {
+        Ok(note) => (
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            note.content,
+        )
+            .into_response(),
+        Err(e) => e,
+    }
+}
+
+async fn select(id: String, pool: &SqlitePool) -> Result<Note, Response> {
+    if id.len() > 64 {
+        return Err(Redirect::temporary(&utils::rand_string(4)).into_response());
+    }
+
+    match Note::read(id, pool).await {
+        Ok(note) => Ok(note),
+        Err(e) => {
+            error!("{e}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+        }
+    }
+}
+
+async fn root_get() -> Redirect {
+    Redirect::temporary(&utils::rand_string(4))
 }
 
 async fn path_post(
     Path(id): Path<String>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(pool): State<SqlitePool>,
-    headers: header::HeaderMap,
+    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     bytes: Bytes,
 ) -> impl IntoResponse {
     if id.len() > 64 {
@@ -132,138 +136,63 @@ async fn path_post(
             .into_response();
     }
 
+    if let Err(e) = create_or_update(id.clone(), &pool, &bytes).await {
+        return e;
+    }
+
+    info!("[note] {id} - {addr} - {user_agent}");
+    StatusCode::OK.into_response()
+}
+
+async fn root_post(
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    State(pool): State<SqlitePool>,
+    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
+    TypedHeader(host): TypedHeader<headers::Host>,
+    bytes: Bytes,
+) -> impl IntoResponse {
+    let id = utils::rand_string(5);
+
+    if let Err(e) = create_or_update(id.clone(), &pool, &bytes).await {
+        return e;
+    }
+
+    info!("[note] {id} - {addr} - {user_agent}");
+    (StatusCode::OK, format!("{host}/-/{id}")).into_response()
+}
+
+async fn create_or_update(id: String, pool: &SqlitePool, bytes: &Bytes) -> Result<(), Response> {
     #[derive(Deserialize)]
     struct Payload {
         t: String,
     }
 
     let t = 'a: {
-        if let Ok(form) = serde_urlencoded::from_bytes::<Payload>(&bytes) {
+        if let Ok(form) = serde_urlencoded::from_bytes::<Payload>(bytes) {
             break 'a form;
         }
 
-        if let Ok(t) = String::from_utf8(bytes.to_vec()) {
-            break 'a Payload { t };
+        if let Ok(t) = std::str::from_utf8(bytes) {
+            break 'a Payload { t: t.to_string() };
         }
 
-        return (
+        return Err((
             StatusCode::BAD_REQUEST,
-            "Invalid, expecting a form with 't' field.",
+            "Invalid, expecting text, encoding=utf-8.",
         )
-            .into_response();
+            .into_response());
     };
-
-    let ua = headers
-        .get(header::USER_AGENT)
-        .and_then(|ua| ua.to_str().ok())
-        .unwrap_or_default();
 
     let note = Note {
         id: id.clone(),
         content: t.t,
     };
 
-    match note.write(&pool).await {
-        Ok(_) => {
-            info!("[note] {id} - {addr} - {ua}");
-            StatusCode::OK.into_response()
-        }
+    match note.write(pool).await {
+        Ok(_) => Ok(()),
         Err(e) => {
             error!("{e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
-}
-
-async fn root_get() -> Redirect {
-    Redirect::temporary(&utils::rand_string(4))
-}
-
-async fn root_post(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(pool): State<SqlitePool>,
-    headers: header::HeaderMap,
-    mut multipart: Multipart,
-) -> impl IntoResponse {
-    let obj = match multipart.next_field().await {
-        Ok(Some(obj)) => obj,
-        _ => return (StatusCode::BAD_REQUEST, "Invalid, expecting a file.").into_response(),
-    };
-
-    if !obj
-        .content_type()
-        .map(|s| s.to_string())
-        .unwrap_or_default()
-        .starts_with("text/")
-    {
-        return (StatusCode::BAD_REQUEST, "Invalid, expecting text file.").into_response();
-    }
-
-    let bytes = match obj.bytes().await {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            error!("{e}");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-
-    let ua = headers
-        .get(header::USER_AGENT)
-        .and_then(|ua| ua.to_str().ok())
-        .unwrap_or_default();
-
-    let id = utils::rand_string(5);
-
-    let note = 'a: {
-        if let Ok(t) = String::from_utf8(bytes.to_vec()) {
-            break 'a Note {
-                id: id.clone(),
-                content: t,
-            };
-        }
-
-        let b64 = general_purpose::STANDARD.encode(&bytes);
-        break 'a Note {
-            id: id.clone(),
-            content: b64,
-        };
-    };
-
-    let host = headers
-        .get(header::HOST)
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or_default();
-
-    match note.write(&pool).await {
-        Ok(_) => {
-            info!("[note] {id} - {addr} - {ua}");
-            (StatusCode::OK, format!("{host}/-/{id}")).into_response()
-        }
-        Err(e) => {
-            error!("{e}");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
-}
-
-async fn path_raw_get(Path(id): Path<String>, State(pool): State<SqlitePool>) -> impl IntoResponse {
-    if id.len() > 64 {
-        return Redirect::temporary(&utils::rand_string(4)).into_response();
-    }
-
-    let mut note = Note {
-        id,
-        content: "".to_string(),
-    };
-
-    if let Err(e) = note.read(&pool).await {
-        error!("{e}");
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-    };
-
-    (
-        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
-        note.content,
-    )
-        .into_response()
 }
