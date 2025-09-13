@@ -2070,7 +2070,6 @@ dependencies = [
  "askama",
  "axum",
  "axum-extra",
- "headers",
  "mime_guess",
  "rand 0.9.2",
  "rust-embed",

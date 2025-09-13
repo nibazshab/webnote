@@ -8,11 +8,11 @@ mod var;
 use askama::Template;
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, State};
+use axum::extract::{DefaultBodyLimit, Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::get;
-use axum_extra::TypedHeader;
+use axum_extra::{TypedHeader, headers};
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use std::env;
@@ -27,22 +27,23 @@ use crate::db::{init_schemas, pool};
 use crate::ext::{ext_router, shutdown_signal};
 use crate::var::Note;
 
-fn router() -> Router<SqlitePool> {
-    Router::new()
-        .route("/{id}", get(path_get).post(path_post))
-        .route("/-/{id}", get(path_raw_get))
-        .route("/", get(root_get).post(root_post))
-}
-
 #[tokio::main]
 async fn main() {
-    println!("v{}", env!("CARGO_PKG_VERSION"));
     tracing_subscriber::fmt().with_target(false).init();
 
-    features::inits().expect("failed to init features");
+    if let Err(e) = application().await {
+        error!("{e}");
+        std::process::exit(1);
+    }
+}
 
-    let pool = pool().await.expect("failed to get database pool");
-    init_schemas(&pool).await.expect("failed to init schemas");
+async fn application() -> Result<(), Box<dyn std::error::Error>> {
+    println!("v{}", env!("CARGO_PKG_VERSION"));
+
+    features::inits()?;
+
+    let pool = pool().await?;
+    init_schemas(&pool).await?;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port()));
     println!("Server running on {addr}");
@@ -51,7 +52,7 @@ async fn main() {
         .layer(DefaultBodyLimit::max(5 << 20))
         .layer(CorsLayer::permissive());
 
-    let listener = TcpListener::bind(addr).await.expect("failed to bind addr");
+    let listener = TcpListener::bind(addr).await?;
     let router = router()
         .merge(ext_router())
         .merge(features::routers())
@@ -61,10 +62,18 @@ async fn main() {
 
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal())
-        .await
-        .expect("failed to run server");
+        .await?;
 
     pool.close().await;
+
+    Ok(())
+}
+
+fn router() -> Router<SqlitePool> {
+    Router::new()
+        .route("/{id}", get(path_get).post(path_post))
+        .route("/-/{id}", get(path_raw_get))
+        .route("/", get(root_get).post(root_post))
 }
 
 async fn path_get(
@@ -87,7 +96,13 @@ async fn path_get(
         )
             .into_response()
     } else {
-        let html = note.render().unwrap_or_default();
+        let html = match note.render() {
+            Ok(html) => html,
+            Err(e) => {
+                error!("{e}");
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
+        };
         Html(html).into_response()
     }
 }
@@ -123,9 +138,7 @@ async fn root_get() -> Redirect {
 
 async fn path_post(
     Path(id): Path<String>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(pool): State<SqlitePool>,
-    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     bytes: Bytes,
 ) -> impl IntoResponse {
     if id.len() > 64 {
@@ -140,14 +153,12 @@ async fn path_post(
         return e;
     }
 
-    info!("[note] {id} - {addr} - {user_agent}");
+    info!("{id}");
     StatusCode::OK.into_response()
 }
 
 async fn root_post(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(pool): State<SqlitePool>,
-    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     TypedHeader(host): TypedHeader<headers::Host>,
     bytes: Bytes,
 ) -> impl IntoResponse {
@@ -157,7 +168,7 @@ async fn root_post(
         return e;
     }
 
-    info!("[note] {id} - {addr} - {user_agent}");
+    info!("{id}");
     (StatusCode::OK, format!("{host}/-/{id}")).into_response()
 }
 

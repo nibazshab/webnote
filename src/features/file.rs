@@ -1,17 +1,16 @@
 use axum::body::Body;
-use axum::extract::{ConnectInfo, Multipart, Path, State};
+use axum::extract::{Multipart, Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
-use axum_extra::TypedHeader;
-use headers::{Header, HeaderName, HeaderValue};
+use axum_extra::headers::{Header, HeaderName, HeaderValue};
+use axum_extra::{TypedHeader, headers};
 use serde_json::json;
 use sqlx::{Decode, Sqlite, SqlitePool, Transaction, Type};
 use std::borrow::Cow;
 use std::cmp::PartialEq;
 use std::fmt::Write;
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::{env, fs, path};
@@ -206,9 +205,7 @@ CREATE TABLE IF NOT EXISTS files (
 }
 
 async fn upload(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(pool): State<SqlitePool>,
-    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
     TypedHeader(host): TypedHeader<headers::Host>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, Error> {
@@ -248,7 +245,7 @@ async fn upload(
 
     tx.commit().await?;
 
-    info!("[feature/file] {} - {addr} - {user_agent}", file.id);
+    info!("{} created", file.id);
     Ok(Json(json!({
         "link": format!("{host}/b/{}", file.id),
         "token": file.token,
@@ -281,7 +278,7 @@ async fn download(
 
     let headers = [(
         header::CONTENT_DISPOSITION,
-        format!("attachment; filename=\"{}\"", safe_name),
+        format!("attachment; filename=\"{safe_name}\""),
     )];
 
     Ok((headers, body).into_response())
@@ -307,6 +304,7 @@ async fn remove(
 
     tx.commit().await?;
 
+    info!("{id} removed");
     Ok(StatusCode::OK)
 }
 
@@ -326,7 +324,7 @@ fn random_token() -> String {
     rand::random::<[u8; 16]>()
         .iter()
         .fold(String::with_capacity(32), |mut s, b| {
-            let _ = write!(&mut s, "{:02x}", b);
+            let _ = write!(&mut s, "{b:02x}");
             s
         })
 }
