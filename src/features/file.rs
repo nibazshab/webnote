@@ -17,9 +17,8 @@ use std::{env, fs, path};
 use tokio::io::AsyncWriteExt;
 use tracing::{error, info};
 
-use crate::cfg::data_dir;
-use crate::ext::assets_response;
-use crate::utils;
+use crate::core::release_assets;
+use crate::{data_dir, utils};
 
 include!(concat!(env!("OUT_DIR"), "/rust_embed_features_file.rs"));
 
@@ -315,7 +314,7 @@ async fn index_page() -> impl IntoResponse {
 
 fn page(Path(id): Path<String>) -> Response {
     match Assets::get(&id) {
-        Some(obj) => assets_response(&id, obj.data),
+        Some(obj) => release_assets(&id, obj.data),
         None => StatusCode::NOT_FOUND.into_response(),
     }
 }

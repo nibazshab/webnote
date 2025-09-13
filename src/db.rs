@@ -3,9 +3,8 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteSynchronous};
 use std::path;
 use std::str::FromStr;
 
-use crate::cfg::data_dir;
-use crate::var::Note;
-use crate::{features, utils};
+use crate::mode::Note;
+use crate::{data_dir, features, utils};
 
 impl Note {
     pub async fn write(&self, pool: &SqlitePool) -> Result<(), sqlx::Error> {
