@@ -320,9 +320,9 @@ fn page(Path(id): Path<String>) -> Response {
 }
 
 fn random_token() -> String {
-    rand::random::<[u8; 16]>()
+    rand::random::<[u8; 8]>()
         .iter()
-        .fold(String::with_capacity(32), |mut s, b| {
+        .fold(String::with_capacity(16), |mut s, b| {
             let _ = write!(&mut s, "{b:02x}");
             s
         })
