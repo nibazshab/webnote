@@ -1,10 +1,14 @@
-# README
+# webnote
 
-不想写 README 了 : (
+不想写说明了 :(
 
-### 启动
+这是一个记事本，也是一个粘贴箱
 
-systemd service
+## 说明
+
+理论上应该支持全平台，测试过 Windows/Mac/Linux/FreeBSD 都能正常编译运行
+
+### 自启动
 
 ```ini
 [Unit]
@@ -17,9 +21,9 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-### 手动编译
+### 编译流程
 
-检查
+1. 检查代码
 
 ```sh
 cargo check
@@ -28,7 +32,7 @@ cargo fmt --all -- --check
 cargo clippy -- -D warnings
 ```
 
-构建
+2. 编译文件
 
 ```sh
 cargo build --verbose --release
@@ -57,3 +61,13 @@ curl -F f=@a.jpg 127.0.0.1:8080/b/
 # DELETE
 curl -X DELETE 127.0.0.1:8080/b/test -H 'token: 2A9B3F692B1715A6'
 ```
+
+## 参考
+
+- pereorga/minimalist-web-notepad
+
+## 题外话
+
+本质上这只是一个练手项目，用来学习用的
+
+发展经过 php/mysql -> go/file -> go/sqlite -> rust/sqlite
