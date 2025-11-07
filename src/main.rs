@@ -26,14 +26,47 @@ async fn main() {
 }
 
 async fn application() -> Result<(), Box<dyn std::error::Error>> {
-    println!("v{}", env!("CARGO_PKG_VERSION"));
+    let mut args = env::args().skip(1).peekable();
+    let mut port = None;
+
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--port" | "-p" => {
+                port = args.next().map(|p| {
+                    p.parse().unwrap_or_else(|_| {
+                        eprintln!("invalid port: {}", p);
+                        std::process::exit(1);
+                    })
+                });
+            }
+            "--help" | "-h" => {
+                print_help(&env::args().next().unwrap());
+                return Ok(());
+            }
+            "--version" | "-v" => {
+                println!("version {}", env!("CARGO_PKG_VERSION"));
+                return Ok(());
+            }
+            _ => {
+                eprintln!("unknown: {}", arg);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let port = port.unwrap_or_else(|| {
+        env::var("PORT")
+            .ok()
+            .and_then(|p| p.parse().ok())
+            .unwrap_or(8080)
+    });
 
     features::inits()?;
 
     let pool = pool().await?;
     init_schemas(&pool).await?;
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port()));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     println!("Server running on {addr}");
 
     let middleware = ServiceBuilder::new()
@@ -90,9 +123,11 @@ pub fn data_dir() -> String {
     })
 }
 
-fn port() -> u16 {
-    env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(8080)
+fn print_help(program_name: &str) {
+    println!("usage: {} [options]", program_name);
+    println!();
+    println!("options:");
+    println!("  -h, --help");
+    println!("  -v, --version");
+    println!("  -p, --port <PORT>");
 }
