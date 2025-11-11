@@ -13,20 +13,16 @@ use std::cmp::PartialEq;
 use std::fmt::Write;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use std::{env, fs, path};
+use std::{fs, path};
 use tokio::io::AsyncWriteExt;
 use tracing::{error, info};
 
 use crate::core::release_assets;
 use crate::{data_dir, utils};
 
-include!(concat!(env!("OUT_DIR"), "/rust_embed_features_file.rs"));
-
-#[cfg(debug_assertions)]
-type Assets = DebugFileAssets;
-
-#[cfg(not(debug_assertions))]
-type Assets = ReleaseFileAssets;
+#[derive(rust_embed::RustEmbed)]
+#[folder = "templates/features/file/"]
+struct FileAssets;
 
 #[derive(Debug)]
 struct File {
@@ -313,7 +309,7 @@ async fn index_page() -> impl IntoResponse {
 }
 
 fn page(Path(id): Path<String>) -> Response {
-    match Assets::get(&id) {
+    match FileAssets::get(&id) {
         Some(obj) => release_assets(&id, obj.data),
         None => StatusCode::NOT_FOUND.into_response(),
     }

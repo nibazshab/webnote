@@ -10,13 +10,9 @@ pub struct Note {
     pub content: String,
 }
 
-include!(concat!(env!("OUT_DIR"), "/rust_embed_assets.rs"));
-
-#[cfg(debug_assertions)]
-pub type Assets = DebugAssets;
-
-#[cfg(not(debug_assertions))]
-pub type Assets = ReleaseAssets;
+#[derive(rust_embed::RustEmbed)]
+#[folder = "templates/assets/"]
+pub struct Assets;
 
 pub enum Error {
     BadRequest(String),
